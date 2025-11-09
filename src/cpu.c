@@ -84,7 +84,7 @@ static void timer_tick(CPU* cpu, int cycles)
     }
 }
 
-uint16_t cpu_step(CPU* cpu, PPU* ppu)
+uint16_t cpu_step(CPU* cpu, PPU* ppu, DMA* dma)
 {
     if (cpu->halted)
     {
