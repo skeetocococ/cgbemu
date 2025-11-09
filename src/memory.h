@@ -52,6 +52,8 @@ typedef struct {
     uint8_t index;
 } DMA;
 
+extern DMA dma;
+
 void write_byte(uint16_t addr, uint8_t val);
 uint8_t read_byte(uint16_t addr);
 void dma_step(DMA* dma);
