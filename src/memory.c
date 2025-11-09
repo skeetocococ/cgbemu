@@ -2,6 +2,8 @@
 #include "joypad.h"
 #include "cpu.h"
 
+static DMA dma = { 0, 0, 0, };
+
 uint8_t memory[MEM_SIZE];
 uint8_t* vram = &memory[VRAM_START]; 
 uint8_t* oam = &memory[OAM_START];
@@ -20,11 +22,9 @@ void write_byte(uint16_t addr, uint8_t val)
     if (addr == 0xFF46)  // DMA transfer
     {
         memory[addr] = val;
-        uint16_t source = val << 8;
-        for (int i = 0; i < 0xA0; i++)
-            memory[0xFE00 + i] = memory[source + i];
-        // Note: Real hardware takes 160 cycles and blocks memory access
-        // For now, instant transfer is fine
+        dma.active = 1;
+        dma.src = val << 8;
+        dma.index = 0;
         return;
     }
     if (addr == 0xFF02 && val == 0x81)
@@ -43,6 +43,8 @@ void write_byte(uint16_t addr, uint8_t val)
         bootstrap_enabled = 0;
         printf("Boot ROM disabled.\n");
     }
+    if (dma.active && addr >= VRAM_START && addr < 0xA000) return;
+    if (dma.active && addr >= OAM_START && addr < 0xFEA0) return;
     if (addr == 0xA000 || addr == 0xA001)
         printf("\n[Test wrote 0x%02X to 0x%04X]\n", val, addr);
     memory[addr] = val;
@@ -68,7 +70,17 @@ uint8_t read_byte(uint16_t addr)
             result &= (joypad.buttons | 0xF0);
         return result;
     }
+    if (dma.active && addr >= 0xFE00 && addr < 0xFEA0) return 0xFF;
+    if (dma.active && addr >= 0x8000 && addr < 0xA000) return 0xFF;
     return memory[addr];
+}
+
+void dma_step(DMA *dma) 
+{ 
+    if (!dma->active) return; 
+    oam[dma->index] = memory[dma->src + dma->index]; 
+    dma->index++; 
+    if (dma->index == 0xA0) dma->active = 0; 
 }
 
 void bootstrap()
