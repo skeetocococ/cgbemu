@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include "memory.h"
-#include "ppu.h"
 
 // Flags
 #define FLAG_Z 0b10000000
@@ -69,12 +68,13 @@ typedef struct {
     uint8_t delay;
 } Timer;
 
+struct PPU;
 extern Timer cpu_timer;
 typedef enum { NZ, Z, NC, C } Condition;
 typedef enum { VBLANK_INT, STAT_INT, TIMER_INT, SERIAL_INT, JOYPAD_INT } Interrupt;
 
 void print_cpu_state(CPU* cpu);
-uint16_t cpu_step(CPU* cpu, PPU* ppu);
+uint16_t cpu_step(CPU* cpu, struct PPU* ppu);
 static inline void request_interrupt(Interrupt interrupt) { memory[ADDR_IF] |= (1 << interrupt); }
 
 #endif // CPU_H
