@@ -46,8 +46,15 @@ extern size_t oam_size;
 // Joypad
 #define ADDR_P1 0xFF00
 
+typedef struct {
+    uint8_t active;
+    uint16_t src;
+    uint8_t index;
+} DMA;
+
 void write_byte(uint16_t addr, uint8_t val);
 uint8_t read_byte(uint16_t addr);
+void dma_step(DMA* dma);
 void bootstrap();
 
 #endif // MEMORY_H
