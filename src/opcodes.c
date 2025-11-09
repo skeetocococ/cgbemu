@@ -1,4 +1,5 @@
 #include "opcodes.h"
+#include "cpu.h"
 #include "instructions/instructions.h"
 #include "memory.h"
 
