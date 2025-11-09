@@ -1,6 +1,6 @@
 #include "cpu.h"
 #include "ppu.h"
-#include "instructions.h"
+#include "instructions/instructions.h"
 #include "opcodes.h"
 #include "memory.h"
 #include <stdio.h>
