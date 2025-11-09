@@ -2,8 +2,6 @@
 #define MEMORY_H
 
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #define MEM_SIZE 65536
