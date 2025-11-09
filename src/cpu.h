@@ -5,10 +5,10 @@
 #include "memory.h"
 
 // Flags
-#define FLAG_Z 0b10000000
-#define FLAG_N 0b01000000
-#define FLAG_H 0b00100000
-#define FLAG_C 0b00010000
+#define FLAG_Z 0x80 // 0b10000000
+#define FLAG_N 0x40 // 0b01000000
+#define FLAG_H 0x20 // 0b00100000
+#define FLAG_C 0x10 // 0b00010000
 
 // CPU register unions
 typedef union {
