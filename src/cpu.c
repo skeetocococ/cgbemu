@@ -157,8 +157,12 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu)
         return cpu_step(cpu, ppu);
     }
 
-    timer_tick(cpu, cycles);
-    ppu_step(ppu, cycles);
+    for (uint16_t i = 0; i < cycles; i++)
+    {
+        timer_tick(cpu, 1);
+        dma_step(dma);
+        ppu_step(ppu, 1);
+    }
     if (cpu->IME && (memory[ADDR_IF] & memory[ADDR_IE]))
         handle_interrupt(cpu);
     return cycles;
