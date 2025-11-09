@@ -1,100 +1,108 @@
 #include "ppu.h"
 #include "cpu.h"
 #include "memory.h"
+#include <SDL2/SDL.h>
 
 static uint8_t get_background_color_id(PPU *ppu, int x, int y)
-{   
-    // scroll
+{
+    // Scroll
     uint16_t bg_x = (x + ppu->SCX) & 0xFF;
     uint16_t bg_y = (y + ppu->SCY) & 0xFF;
 
-    // Tile indices
+    // Tile index inside the map
     uint8_t tile_x = bg_x / 8;
     uint8_t tile_y = bg_y / 8;
 
-    // Tilemap address
     uint16_t tilemap_base = (ppu->LCDC & 0x08) ? 0x9C00 : 0x9800;
-    uint16_t tilemap_index = tile_y * 32 + tile_x;
-    uint8_t tile_id = vram[tilemap_base - VRAM_START + tilemap_index];
+    uint16_t tilemap_addr = tilemap_base + tile_y * 32 + tile_x;
 
-    // Tile data address
-    uint16_t tiledata_base = (ppu->LCDC & 0x10) ? VRAM_START : TILESET2_START;
-    uint16_t tile_addr;
-    if (tiledata_base == VRAM_START)
-        tile_addr = tiledata_base - VRAM_START + tile_id * 16; // Unsigned index
-    else 
-    {
-        // signed indexing (-128..127)
-        int8_t signed_id = (int8_t)tile_id;
-        tile_addr = 0x9000 - VRAM_START + signed_id * 16;
-    }
-
-    // Row inside tile
-    int pixel_y = bg_y % 8;
-    uint8_t low  = vram[tile_addr + pixel_y * 2];
-    uint8_t high = vram[tile_addr + pixel_y * 2 + 1];
-
-    // Pixel inside row
-    int pixel_x = bg_x % 8;
-    int bit = 7 - pixel_x;
-    uint8_t color = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
-
-    return color; // 0..3
-}
-
-static uint8_t get_window_color_id(PPU *ppu, int x, int y)
-{
-    // Window is disabled or not yet visible
-    if (!(ppu->LCDC & 0x20)) return 0;
-
-    int wx = ppu->WX - 7; // WX is offset by 7
-    int wy = ppu->WY;
-
-    if (x < wx || y < wy) return 0; // Not inside window yet
-
-    int win_x = x - wx;
-    int win_y = y - wy;
-
-    // Tile indices
-    uint8_t tile_x = win_x / 8;
-    uint8_t tile_y = win_y / 8;
-
-    // Window tilemap base
-    uint16_t tilemap_base = (ppu->LCDC & 0x40) ? 0x9C00 : 0x9800;
-    uint16_t tilemap_index = tile_y * 32 + tile_x;
-    uint8_t tile_id = vram[tilemap_base - VRAM_START + tilemap_index];
+    uint8_t tile_id = memory[tilemap_addr];
 
     // Tile data base
-    uint16_t tiledata_base = (ppu->LCDC & 0x10) ? VRAM_START : TILESET2_START;
+    uint8_t unsigned_mode = (ppu->LCDC & 0x10) != 0;
+
     uint16_t tile_addr;
-    if (tiledata_base == VRAM_START) 
-        tile_addr = VRAM_START - VRAM_START + tile_id * 16;
-    else 
+
+    if (unsigned_mode) 
     {
-        int8_t signed_id = (int8_t)tile_id;
-        tile_addr = 0x9000 - VRAM_START + signed_id * 16;
+        // 0x8000 mode, unsigned indexing
+        tile_addr = 0x8000 + tile_id * 16;
+    } else 
+    {
+        // 0x8800 mode, signed indexing
+        int8_t id_signed = (int8_t)tile_id;
+        tile_addr = 0x9000 + (id_signed * 16);
     }
 
-    // Pixel inside tile
-    int pixel_y = win_y % 8;
-    int pixel_x = win_x % 8;
-    uint8_t low  = vram[tile_addr + pixel_y * 2];
-    uint8_t high = vram[tile_addr + pixel_y * 2 + 1];
-    int bit = 7 - pixel_x;
+    // Pixel row inside the tile
+    int row = bg_y & 7;
 
-    uint8_t color = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
-    return color; // 0..3
+    uint8_t low  = memory[tile_addr + row * 2];
+    uint8_t high = memory[tile_addr + row * 2 + 1];
+
+    int bit = 7 - (bg_x & 7);
+    return ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
 }
 
 static void render_scanline(PPU* ppu)
 {
     int y = ppu->line;
     if (y >= 144) return; // only visible lines
-    if (!(ppu->LCDC & 0x80)) return; // LCD off
+    if (!(ppu->LCDC & 0x80)) 
+    {
+        // LCD off - display white
+        for (int x = 0; x < 160; x++)
+            ppu->framebuffer[y][x] = 0xFFFFFFFF;
+        return;
+    }
 
-    uint8_t bg_ids[160]; // sprite priority
+    static int debug_once = 0;
+    if (!debug_once && y == 0)
+    {
+        printf("=== Rendering scanline 0 ===\n");
+        printf("LCDC=%02X BGP=%02X\n", ppu->LCDC, memory[0xFF47]);
+        printf("SCX=%d SCY=%d\n", ppu->SCX, ppu->SCY);
+        
+        // Check first tile
+        uint16_t tilemap_base = (ppu->LCDC & 0x08) ? 0x9C00 : 0x9800;
+        printf("Tilemap base: 0x%04X\n", tilemap_base);
+        printf("First tile ID: 0x%02X\n", memory[tilemap_base]);
+        
+        // Check tile data
+        uint8_t tile_id = memory[tilemap_base];
+        uint16_t tile_addr;
+        if (ppu->LCDC & 0x10) 
+        {
+            tile_addr = 0x8000 + tile_id * 16;
+        } else 
+        {
+            tile_addr = 0x9000 + ((int8_t)tile_id * 16);
+        }
+        printf("First tile address: 0x%04X\n", tile_addr);
+        printf("First tile data: %02X %02X\n", memory[tile_addr], memory[tile_addr+1]);
+        
+        uint8_t color_id = get_background_color_id(ppu, 0, 0);
+        printf("First pixel color_id: %d\n", color_id);
+        printf("Palette mapping: 0->%d 1->%d 2->%d 3->%d\n",
+               (memory[0xFF47] >> 0) & 3,
+               (memory[0xFF47] >> 2) & 3,
+               (memory[0xFF47] >> 4) & 3,
+               (memory[0xFF47] >> 6) & 3);
+        debug_once = 1;
+    }
+
+    uint8_t bg_ids[160]; // for sprite priority
     uint32_t fb_line[160]; // final RGB values
 
+    uint8_t bgp = memory[0xFF47];
+    static const uint32_t colors[4] = {
+        0xFFFFFFFF, // White (lightest)
+        0xAAAAAAFF, // Light gray
+        0x555555FF, // Dark gray
+        0x000000FF  // Black (darkest)
+    };
+
+    // Render background
     for (int x = 0; x < 160; x++)
     {
         uint8_t color_id = 0;
@@ -102,24 +110,63 @@ static void render_scanline(PPU* ppu)
         if (ppu->LCDC & 0x01)
             color_id = get_background_color_id(ppu, x, y);
 
-        uint32_t final_color = ppu->bg_palette[color_id];
+        // Map color_id through palette
+        uint8_t shade = (bgp >> (color_id * 2)) & 0x03;
+        uint32_t final_color = colors[shade];
 
-        if (ppu->LCDC & 0x20) // Window enabled
-        {
-            int wx = ppu->WX - 7;
-            int wy = ppu->WY;
-            if (x >= wx && y >= wy)
-            {
-                color_id = get_window_color_id(ppu, x, y);
-                final_color = ppu->bg_palette[color_id];
-            }
-        }
-
-        bg_ids[x] = color_id;    // sprite priority
-        fb_line[x] = final_color; // final RGB value
+        bg_ids[x] = color_id;
+        fb_line[x] = final_color;
     }
 
-    if (ppu->LCDC & 0x02) // OBJ enabled
+    // Render window (if enabled)
+    if (ppu->LCDC & 0x20) 
+    {
+        int wx = ppu->WX - 7;
+        int wy = ppu->WY;
+        
+        if (y >= wy) 
+        {
+            for (int x = 0; x < 160; x++) 
+            {
+                if (x >= wx) 
+                {
+                    int win_x = x - wx;
+                    int win_y = y - wy;
+
+                    uint8_t tile_x = win_x / 8;
+                    uint8_t tile_y = win_y / 8;
+
+                    uint16_t tilemap_base = (ppu->LCDC & 0x40) ? 0x9C00 : 0x9800;
+                    uint16_t tilemap_addr = tilemap_base + tile_y * 32 + tile_x;
+
+                    uint8_t tile_id = memory[tilemap_addr];
+
+                    uint16_t tile_addr;
+                    if (ppu->LCDC & 0x10) 
+                        tile_addr = 0x8000 + tile_id * 16;
+                    else 
+                    {
+                        int8_t signed_id = (int8_t)tile_id;
+                        tile_addr = 0x9000 + signed_id * 16;
+                    }
+
+                    int row = win_y & 7;
+                    uint8_t low  = memory[tile_addr + row * 2];
+                    uint8_t high = memory[tile_addr + row * 2 + 1];
+
+                    int bit = 7 - (win_x & 7);
+                    uint8_t color_id = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
+                    
+                    uint8_t shade = (bgp >> (color_id * 2)) & 0x03;
+                    fb_line[x] = colors[shade];
+                    bg_ids[x] = color_id;
+                }
+            }
+        }
+    }
+
+    // Render sprites (if enabled)
+    if (ppu->LCDC & 0x02) 
     {
         int sprite_height = (ppu->LCDC & 0x04) ? 16 : 8;
 
@@ -135,11 +182,11 @@ static void render_scanline(PPU* ppu)
             int pixel_y = y - y_spr;
             if (attr & 0x40) pixel_y = sprite_height - 1 - pixel_y; // Y flip
 
-            if (sprite_height == 16) tile_id &= 0xFE; // 8x16 sprite, ignore LSB
+            if (sprite_height == 16) tile_id &= 0xFE;
 
-            uint16_t tile_addr = VRAM_START - VRAM_START + tile_id * 16 + pixel_y * 2;
-            uint8_t low  = vram[tile_addr];
-            uint8_t high = vram[tile_addr + 1];
+            uint16_t tile_addr = 0x8000 + tile_id * 16 + pixel_y * 2;
+            uint8_t low  = memory[tile_addr];
+            uint8_t high = memory[tile_addr + 1];
 
             for (int px = 0; px < 8; px++)
             {
@@ -151,11 +198,12 @@ static void render_scanline(PPU* ppu)
                 if (fb_x < 0 || fb_x >= 160) continue;
 
                 // Priority: OBJ-to-BG
-                // If bit 7 is set and background color ID is non-zero, skip
                 if ((attr & 0x80) && bg_ids[fb_x] != 0) continue;
 
                 int palette_index = (attr & 0x10) ? 1 : 0;
-                fb_line[fb_x] = ppu->sprite_palette[palette_index][color_id];
+                uint8_t obp = memory[palette_index ? 0xFF49 : 0xFF48];
+                uint8_t shade = (obp >> (color_id * 2)) & 0x03;
+                fb_line[fb_x] = colors[shade];
             }
         }
     }
@@ -165,108 +213,129 @@ static void render_scanline(PPU* ppu)
         ppu->framebuffer[y][x] = fb_line[x];
 }
 
+void render_frame(SDL_Renderer* renderer, SDL_Texture* texture, uint32_t framebuffer[144][160])
+{
+    SDL_UpdateTexture(texture, NULL, framebuffer, 160 * sizeof(uint32_t));
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+}
+
 void ppu_init(PPU *ppu)
 {
     ppu->mode = OAM;
     ppu->mode_clock = 0;
+    ppu->frame_ready = 0;
     ppu->line = 0;
     ppu->SCX = 0;
     ppu->SCY = 0;
     ppu->WX = 0;
     ppu->WY = 0;
-    ppu->LCDC = 0x91; // LCD enabled, BG enabled, OBJ enabled, 8x8 sprites
 
-    // BG palette: map 0..3 to grayscale RGB
-    ppu->bg_palette[0] = 0xFFFFFFFF; // white
-    ppu->bg_palette[1] = 0xAAAAAAFF; // light gray
-    ppu->bg_palette[2] = 0x555555FF; // dark gray
-    ppu->bg_palette[3] = 0x000000FF; // black
-
-    for (int p = 0; p < 2; p++)
-    {
-        ppu->sprite_palette[p][0] = ppu->bg_palette[0];
-        ppu->sprite_palette[p][1] = ppu->bg_palette[1];
-        ppu->sprite_palette[p][2] = ppu->bg_palette[2];
-        ppu->sprite_palette[p][3] = ppu->bg_palette[3];
-    }
-
+    // Initialize framebuffer to white
     for (int y = 0; y < 144; y++)
         for (int x = 0; x < 160; x++)
-            ppu->framebuffer[y][x] = ppu->bg_palette[0];
+            ppu->framebuffer[y][x] = 0xFFFFFFFF;
 }
 
 void ppu_step(PPU *ppu, int cycles)
 {
-    ppu->mode_clock += cycles;
-    switch(ppu->mode)
-    {
-        case OAM:
-            if (ppu->mode_clock >= 80)
-            {
-                ppu->mode_clock -= 80;
-                memory[0xFF44] = ppu->line;
-                ppu->mode = VRAM;
-                // Update STAT mode bits (0b10 for mode 2)
-                memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x02;
-            }
-            break;
-        case VRAM:
-            if (ppu->mode_clock >= 172)
-            {
-                ppu->mode_clock -= 172;
-                render_scanline(ppu); 
-                memory[0xFF44] = ppu->line;
-                ppu->mode = HBLANK;
-                // Update STAT mode bits (0b00 for mode 0)
-                memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x00;
-                // HBLANK interrupt
-                if (memory[0xFF41] & 0x08)
-                    request_interrupt(STAT_INT);
-            }
-            break;
-        case HBLANK:
-            if (ppu->mode_clock >= 204)
-            {
-                ppu->mode_clock -= 204;
-                ppu->line++;
-                memory[0xFF44] = ppu->line;
-                if (ppu->line == 144)
-                {
-                    ppu->mode = VBLANK;
-                    request_interrupt(VBLANK_INT);
-                    // Update STAT mode bits (0b01 for mode 1)
-                    memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x01;
-                }
-                else
-                {
-                    ppu->mode = OAM;
-                    // Update STAT mode bits (0b10 for mode 2)
-                    memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x02;
-                }
+    ppu->LCDC = memory[0xFF40];
+    ppu->SCX = memory[0xFF43];
+    ppu->SCY = memory[0xFF42];
+    ppu->WX = memory[0xFF4B];
+    ppu->WY = memory[0xFF4A];
 
-                // LY=LYC check
-                if (ppu->line == memory[0xFF45] && (memory[0xFF41] & 0x40))
-                    request_interrupt(STAT_INT);
-            }
-            break;
-        case VBLANK:
-            if (ppu->mode_clock >= 456)
-            {
-                ppu->mode_clock -= 456;
-                ppu->line++;
-                memory[0xFF44] = ppu->line;
-                if (ppu->line > 153)
+    ppu->mode_clock += cycles;
+
+    if (ppu->LCDC & 0x80)  // LCD enabled
+    {
+        switch(ppu->mode)
+        {
+            case OAM:
+                if (ppu->mode_clock >= 80)
                 {
-                    ppu->line = 0;
-                    memory[0xFF44] = 0;
-                    ppu->mode = OAM;
-                    // Update STAT mode bits (0b10 for mode 2)
-                    memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x02;
+                    ppu->mode_clock -= 80;
+                    ppu->mode = VRAM;
+                    memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x03;  // Mode 3
                 }
-                // LY=LYC check during VBLANK
-                if (ppu->line == memory[0xFF45] && (memory[0xFF41] & 0x40))
-                    request_interrupt(STAT_INT);
+                break;
+                
+            case VRAM:
+                if (ppu->mode_clock >= 172)
+                {
+                    ppu->mode_clock -= 172;
+                    render_scanline(ppu);
+                    ppu->mode = HBLANK;
+                    memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x00;  // Mode 0
+                    
+                    // STAT interrupt for HBLANK
+                    if (memory[0xFF41] & 0x08)
+                        request_interrupt(STAT_INT);
+                }
+                break;
+                
+            case HBLANK:
+                if (ppu->mode_clock >= 204)
+                {
+                    ppu->mode_clock -= 204;
+                    ppu->line++;
+                    memory[0xFF44] = ppu->line;  // Update LY register
+                    
+                    if (ppu->line == 144)  // Last visible scanline
+                    {
+                        ppu->mode = VBLANK;
+                        request_interrupt(VBLANK_INT);  // VBLANK interrupt
+                        ppu->frame_ready = 1;
+                        memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x01;  // Mode 1
+                    }
+                    else
+                    {
+                        ppu->mode = OAM;
+                        memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x02;  // Mode 2
+                    }
+                    
+                    // LY=LYC coincidence interrupt
+                    if (ppu->line == memory[0xFF45] && (memory[0xFF41] & 0x40))
+                        request_interrupt(STAT_INT);
+                }
+                break;
+                
+            case VBLANK:
+                if (ppu->mode_clock >= 456)
+                {
+                    ppu->mode_clock -= 456;
+                    ppu->line++;
+                    memory[0xFF44] = ppu->line;
+                    
+                    if (ppu->line > 153)  // End of VBLANK
+                    {
+                        ppu->line = 0;
+                        ppu->mode = OAM;
+                        memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x02;  // Mode 2
+                    }
+                    
+                    // LY=LYC coincidence interrupt
+                    if (ppu->line == memory[0xFF45] && (memory[0xFF41] & 0x40))
+                        request_interrupt(STAT_INT);
+                }
+                break;
+        }
+    }
+    else  // LCD disabled
+    {
+        // When LCD is off, reset to initial state but still update LY
+        ppu->mode = OAM;
+        ppu->mode_clock = 0;
+        
+        // Basic LY update for boot ROM compatibility
+        if (ppu->mode_clock >= 456) {
+            ppu->mode_clock -= 456;
+            ppu->line++;
+            if (ppu->line > 153) {
+                ppu->line = 0;
             }
-            break;
+            memory[0xFF44] = ppu->line;
+        }
     }
 }

@@ -74,7 +74,8 @@ typedef enum { NZ, Z, NC, C } Condition;
 typedef enum { VBLANK_INT, STAT_INT, TIMER_INT, SERIAL_INT, JOYPAD_INT } Interrupt;
 
 void print_cpu_state(CPU* cpu);
-uint16_t cpu_step(CPU* cpu, PPU* ppu, DMA* dma);
+void cpu_init(CPU* cpu);
+uint16_t cpu_step(CPU* cpu, PPU* ppu);
 static inline void request_interrupt(Interrupt interrupt) { memory[ADDR_IF] |= (1 << interrupt); }
 
 #endif // CPU_H

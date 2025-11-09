@@ -28,12 +28,29 @@ static void ld_bc_u16(CPU* cpu)
     uint8_t high = read_byte(REG_PC++);
     REG_BC = (high << 8) | low; // next two bytes into BC reg pair
 }
-static void ld_de_u16(CPU* cpu) { REG_DE = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8); }
-static void ld_hl_u16(CPU* cpu) { REG_HL = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8); }
-static void ld_sp_u16(CPU* cpu) { REG_SP = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8); }
+void ld_de_u16(CPU* cpu) 
+{
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    REG_DE = (high << 8) | low;
+}
+
+void ld_hl_u16(CPU* cpu) 
+{
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    REG_HL = (high << 8) | low;
+}
+
+void ld_sp_u16(CPU* cpu) 
+{
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    REG_SP = (high << 8) | low;
+}
 static void ld_a_b(CPU* cpu) { ld_rx_ry(cpu, &REG_A, &REG_B); }
 static void load_a_c(CPU* cpu) { ld_a_c(cpu); }
-static void ld_b_c(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_B); }
+static void ld_b_c(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_C); }
 static void ld_hl_a(CPU* cpu) { ld_hl_ry(cpu, &REG_A); }
 static void ld_a_d(CPU* cpu) { ld_rx_ry(cpu, &REG_A, &REG_D); }
 static void ld_a_e(CPU* cpu) { ld_rx_ry(cpu, &REG_A, &REG_E); }
@@ -42,7 +59,7 @@ static void ld_a_l(CPU* cpu) { ld_rx_ry(cpu, &REG_A, &REG_L); }
 static void ld_a_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_A); }
 static void ld_b_a(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_A); }
 static void ld_b_n(CPU* cpu) { ld_r_n(cpu, &REG_B); }
-static void ld_c_n(CPU* cpu) { ld_r_n(cpu, &REG_B); }
+static void ld_c_n(CPU* cpu) { ld_r_n(cpu, &REG_C); }
 static void ld_d_n(CPU* cpu) { ld_r_n(cpu, &REG_D); }
 static void ld_e_n(CPU* cpu) { ld_r_n(cpu, &REG_E); }
 static void ld_h_n(CPU* cpu) { ld_r_n(cpu, &REG_H); }
@@ -67,48 +84,48 @@ static void ld_b_d(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_D); }
 static void ld_b_e(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_E); }
 static void ld_b_h(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_H); }
 static void ld_b_l(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_L); }
-static void ld_c_b(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_B); }
-static void ld_c_c(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_B); }
-static void ld_c_d(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_D); }
-static void ld_c_e(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_E); }
-static void ld_c_h(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_H); }
-static void ld_c_l(CPU* cpu) { ld_rx_ry(cpu, &REG_B, &REG_L); }
+static void ld_c_b(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_B); }
+static void ld_c_c(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_C); }
+static void ld_c_d(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_D); }
+static void ld_c_e(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_E); }
+static void ld_c_h(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_H); }
+static void ld_c_l(CPU* cpu) { ld_rx_ry(cpu, &REG_C, &REG_L); }
 static void ld_d_b(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_B); }
-static void ld_d_c(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_B); }
+static void ld_d_c(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_C); }
 static void ld_d_d(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_D); }
 static void ld_d_e(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_E); }
 static void ld_d_h(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_H); }
 static void ld_d_l(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_L); }
 static void ld_d_a(CPU* cpu) { ld_rx_ry(cpu, &REG_D, &REG_A); }
 static void ld_e_b(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_B); }
-static void ld_e_c(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_B); }
+static void ld_e_c(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_C); }
 static void ld_e_d(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_D); }
 static void ld_e_e(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_E); }
 static void ld_e_h(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_H); }
 static void ld_e_l(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_L); }
 static void ld_e_a(CPU* cpu) { ld_rx_ry(cpu, &REG_E, &REG_A); }
 static void ld_h_b(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_B); }
-static void ld_h_c(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_B); }
+static void ld_h_c(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_C); }
 static void ld_h_d(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_D); }
 static void ld_h_e(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_E); }
 static void ld_h_h(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_H); }
 static void ld_h_l(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_L); }
 static void ld_h_a(CPU* cpu) { ld_rx_ry(cpu, &REG_H, &REG_A); }
 static void ld_l_b(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_B); }
-static void ld_l_c(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_B); }
+static void ld_l_c(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_C); }
 static void ld_l_d(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_D); }
 static void ld_l_e(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_E); }
 static void ld_l_h(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_H); }
 static void ld_l_l(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_L); }
 static void ld_l_a(CPU* cpu) { ld_rx_ry(cpu, &REG_L, &REG_A); }
 static void ld_hl_b(CPU* cpu) { ld_hl_ry(cpu, &REG_B); }
-static void ld_hl_c(CPU* cpu) { ld_hl_ry(cpu, &REG_B); }
+static void ld_hl_c(CPU* cpu) { ld_hl_ry(cpu, &REG_C); }
 static void ld_hl_d(CPU* cpu) { ld_hl_ry(cpu, &REG_D); }
 static void ld_hl_e(CPU* cpu) { ld_hl_ry(cpu, &REG_E); }
 static void ld_hl_h(CPU* cpu) { ld_hl_ry(cpu, &REG_H); }
 static void ld_hl_l(CPU* cpu) { ld_hl_ry(cpu, &REG_L); }
 static void ld_b_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_B); }
-static void ld_c_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_B); }
+static void ld_c_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_C); }
 static void ld_d_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_D); }
 static void ld_e_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_E); }
 static void ld_h_hl(CPU* cpu) { ld_rx_hl(cpu, &REG_H); }
@@ -121,7 +138,7 @@ static void ld_hl_n(CPU* cpu) {
 }
 // ADD
 static void add_a_b(CPU* cpu) { add_a_n(cpu, REG_B); }
-static void add_a_c(CPU* cpu) { add_a_n(cpu, REG_B); }
+static void add_a_c(CPU* cpu) { add_a_n(cpu, REG_C); }
 static void add_a_d(CPU* cpu) { add_a_n(cpu, REG_D); }
 static void add_a_e(CPU* cpu) { add_a_n(cpu, REG_E); }
 static void add_a_h(CPU* cpu) { add_a_n(cpu, REG_H); }
@@ -133,7 +150,7 @@ static void add_hl_de(CPU* cpu) { add_hl_n(cpu, &REG_DE); }
 static void add_hl_hl(CPU* cpu) { add_hl_n(cpu, &REG_HL); }
 static void add_hl_sp(CPU* cpu) { add_hl_n(cpu, &REG_SP); }
 static void adc_a_b(CPU* cpu) { adc_a_n(cpu, REG_B); }
-static void adc_a_c(CPU* cpu) { adc_a_n(cpu, REG_B); }
+static void adc_a_c(CPU* cpu) { adc_a_n(cpu, REG_C); }
 static void adc_a_d(CPU* cpu) { adc_a_n(cpu, REG_D); }
 static void adc_a_e(CPU* cpu) { adc_a_n(cpu, REG_E); }
 static void adc_a_h(CPU* cpu) { adc_a_n(cpu, REG_H); }
@@ -142,7 +159,7 @@ static void adc_a_hl(CPU* cpu) { adc_a_n(cpu, read_byte(REG_HL)); }
 static void adc_a_a(CPU* cpu) { adc_a_n(cpu, REG_A); }
 // SUB
 static void sub_a_b(CPU* cpu) { sub_a_n(cpu, REG_B); }
-static void sub_a_c(CPU* cpu) { sub_a_n(cpu, REG_B); }
+static void sub_a_c(CPU* cpu) { sub_a_n(cpu, REG_C); }
 static void sub_a_d(CPU* cpu) { sub_a_n(cpu, REG_D); }
 static void sub_a_e(CPU* cpu) { sub_a_n(cpu, REG_E); }
 static void sub_a_h(CPU* cpu) { sub_a_n(cpu, REG_H); }
@@ -150,7 +167,7 @@ static void sub_a_l(CPU* cpu) { sub_a_n(cpu, REG_L); }
 static void sub_a_hl(CPU* cpu) { sub_a_n(cpu, read_byte(REG_HL)); }
 static void sub_a_a(CPU* cpu) { sub_a_n(cpu, REG_A); }
 static void sbc_a_b(CPU* cpu) { sbc_a_n(cpu, REG_B); }
-static void sbc_a_c(CPU* cpu) { sbc_a_n(cpu, REG_B); }
+static void sbc_a_c(CPU* cpu) { sbc_a_n(cpu, REG_C); }
 static void sbc_a_d(CPU* cpu) { sbc_a_n(cpu, REG_D); }
 static void sbc_a_e(CPU* cpu) { sbc_a_n(cpu, REG_E); }
 static void sbc_a_h(CPU* cpu) { sbc_a_n(cpu, REG_H); }
@@ -159,7 +176,7 @@ static void sbc_a_hl(CPU* cpu) { sbc_a_n(cpu, read_byte(REG_HL)); }
 static void sbc_a_a(CPU* cpu) { sbc_a_n(cpu, REG_A); }
 // INC
 static void inc_b(CPU* cpu) { inc_n(cpu, &REG_B); }
-static void inc_c(CPU* cpu) { inc_n(cpu, &REG_B); }
+static void inc_c(CPU* cpu) { inc_n(cpu, &REG_C); }
 static void inc_d(CPU* cpu) { inc_n(cpu, &REG_D); }
 static void inc_e(CPU* cpu) { inc_n(cpu, &REG_E); }
 static void inc_h(CPU* cpu) { inc_n(cpu, &REG_H); }
@@ -176,7 +193,7 @@ static void inc_hl(CPU* cpu) { inc_nn(cpu, &REG_HL); }
 static void inc_sp(CPU* cpu) { inc_nn(cpu, &REG_SP); }
 // DEC
 static void dec_b(CPU* cpu) { dec_n(cpu, &REG_B); }
-static void dec_c(CPU* cpu) { dec_n(cpu, &REG_B); }
+static void dec_c(CPU* cpu) { dec_n(cpu, &REG_C); }
 static void dec_d(CPU* cpu) { dec_n(cpu, &REG_D); }
 static void dec_e(CPU* cpu) { dec_n(cpu, &REG_E); }
 static void dec_h(CPU* cpu) { dec_n(cpu, &REG_H); }
@@ -203,7 +220,7 @@ static void pop_hl(CPU* cpu) { REG_HL = pop_nn(cpu); }
 static void pop_af(CPU* cpu) { REG_AF = pop_nn(cpu) & 0xFFF0; } // lower 4 bits of F always 0
 // AND
 static void and_a_b(CPU* cpu) { and_a_n(cpu, REG_B); }
-static void and_a_c(CPU* cpu) { and_a_n(cpu, REG_B); }
+static void and_a_c(CPU* cpu) { and_a_n(cpu, REG_C); }
 static void and_a_d(CPU* cpu) { and_a_n(cpu, REG_D); }
 static void and_a_e(CPU* cpu) { and_a_n(cpu, REG_E); }
 static void and_a_h(CPU* cpu) { and_a_n(cpu, REG_H); }
@@ -212,7 +229,7 @@ static void and_a_hl(CPU* cpu) { and_a_n(cpu, read_byte(REG_HL)); }
 static void and_a_a(CPU* cpu) { and_a_n(cpu, REG_A); }
 // OR
 static void or_a_b(CPU* cpu) { or_a_n(cpu, REG_B); }
-static void or_a_c(CPU* cpu) { or_a_n(cpu, REG_B); }
+static void or_a_c(CPU* cpu) { or_a_n(cpu, REG_C); }
 static void or_a_d(CPU* cpu) { or_a_n(cpu, REG_D); }
 static void or_a_e(CPU* cpu) { or_a_n(cpu, REG_E); }
 static void or_a_h(CPU* cpu) { or_a_n(cpu, REG_H); }
@@ -221,7 +238,7 @@ static void or_a_hl(CPU* cpu) { or_a_n(cpu, read_byte(REG_HL)); }
 static void or_a_a(CPU* cpu) { or_a_n(cpu, REG_A); }
 // XOR
 static void xor_a_b(CPU* cpu) { xor_a_n(cpu, REG_B); }
-static void xor_a_c(CPU* cpu) { xor_a_n(cpu, REG_B); }
+static void xor_a_c(CPU* cpu) { xor_a_n(cpu, REG_C); }
 static void xor_a_d(CPU* cpu) { xor_a_n(cpu, REG_D); }
 static void xor_a_e(CPU* cpu) { xor_a_n(cpu, REG_E); }
 static void xor_a_h(CPU* cpu) { xor_a_n(cpu, REG_H); }
@@ -230,7 +247,7 @@ static void xor_a_hl(CPU* cpu) { xor_a_n(cpu, read_byte(REG_HL)); }
 static void xor_a_a(CPU* cpu) { xor_a_n(cpu, REG_A); }
 // CP
 static void cp_a_b(CPU* cpu) { cp_a_n(cpu, REG_B); }
-static void cp_a_c(CPU* cpu) { cp_a_n(cpu, REG_B); }
+static void cp_a_c(CPU* cpu) { cp_a_n(cpu, REG_C); }
 static void cp_a_d(CPU* cpu) { cp_a_n(cpu, REG_D); }
 static void cp_a_e(CPU* cpu) { cp_a_n(cpu, REG_E); }
 static void cp_a_h(CPU* cpu) { cp_a_n(cpu, REG_H); }
@@ -245,7 +262,7 @@ static void cp_a_imm(CPU* cpu)
 // SWAP
 static void swap_a(CPU* cpu) { swap_n(cpu, &REG_A); }
 static void swap_b(CPU* cpu) { swap_n(cpu, &REG_B); }
-static void swap_c(CPU* cpu) { swap_n(cpu, &REG_B); }
+static void swap_c(CPU* cpu) { swap_n(cpu, &REG_C); }
 static void swap_d(CPU* cpu) { swap_n(cpu, &REG_D); }
 static void swap_e(CPU* cpu) { swap_n(cpu, &REG_E); }
 static void swap_h(CPU* cpu) { swap_n(cpu, &REG_H); }
@@ -264,7 +281,7 @@ static void op_rrca(CPU* cpu) { rrc(cpu, &REG_A); }
 static void op_rra(CPU* cpu)  { rrn(cpu, &REG_A); }
 static void rlc_a(CPU* cpu) { rlc(cpu, &REG_A); }
 static void rlc_b(CPU* cpu) { rlc(cpu, &REG_B); }
-static void rlc_c(CPU* cpu) { rlc(cpu, &REG_B); }
+static void rlc_c(CPU* cpu) { rlc(cpu, &REG_C); }
 static void rlc_d(CPU* cpu) { rlc(cpu, &REG_D); }
 static void rlc_e(CPU* cpu) { rlc(cpu, &REG_E); }
 static void rlc_h(CPU* cpu) { rlc(cpu, &REG_H); }
@@ -283,14 +300,14 @@ static void rl_hlp(CPU* cpu)
 }
 static void rl_a(CPU* cpu) { rl(cpu, &REG_A); }
 static void rl_b(CPU* cpu) { rl(cpu, &REG_B); }
-static void rl_c(CPU* cpu) { rl(cpu, &REG_B); }
+static void rl_c(CPU* cpu) { rl(cpu, &REG_C); }
 static void rl_d(CPU* cpu) { rl(cpu, &REG_D); }
 static void rl_e(CPU* cpu) { rl(cpu, &REG_E); }
 static void rl_h(CPU* cpu) { rl(cpu, &REG_H); }
 static void rl_l(CPU* cpu) { rl(cpu, &REG_L); }
 static void rrc_a(CPU* cpu) { rrc(cpu, &REG_A); }
 static void rrc_b(CPU* cpu) { rrc(cpu, &REG_B); }
-static void rrc_c(CPU* cpu) { rrc(cpu, &REG_B); }
+static void rrc_c(CPU* cpu) { rrc(cpu, &REG_C); }
 static void rrc_d(CPU* cpu) { rrc(cpu, &REG_D); }
 static void rrc_e(CPU* cpu) { rrc(cpu, &REG_E); }
 static void rrc_h(CPU* cpu) { rrc(cpu, &REG_H); }
@@ -303,7 +320,7 @@ static void rrc_hlp(CPU* cpu)
 }
 static void rr_a(CPU* cpu) { rrn(cpu, &REG_A); }
 static void rr_b(CPU* cpu) { rrn(cpu, &REG_B); }
-static void rr_c(CPU* cpu) { rrn(cpu, &REG_B); }
+static void rr_c(CPU* cpu) { rrn(cpu, &REG_C); }
 static void rr_d(CPU* cpu) { rrn(cpu, &REG_D); }
 static void rr_e(CPU* cpu) { rrn(cpu, &REG_E); }
 static void rr_h(CPU* cpu) { rrn(cpu, &REG_H); }
@@ -317,7 +334,7 @@ static void rr_hlp(CPU* cpu)
 // Shifts
 static void sla_a(CPU* cpu) { sla(cpu, &REG_A); }
 static void sla_b(CPU* cpu) { sla(cpu, &REG_B); }
-static void sla_c(CPU* cpu) { sla(cpu, &REG_B); }
+static void sla_c(CPU* cpu) { sla(cpu, &REG_C); }
 static void sla_d(CPU* cpu) { sla(cpu, &REG_D); }
 static void sla_e(CPU* cpu) { sla(cpu, &REG_E); }
 static void sla_h(CPU* cpu) { sla(cpu, &REG_H); }
@@ -325,7 +342,7 @@ static void sla_l(CPU* cpu) { sla(cpu, &REG_L); }
 static void sla_hlp(CPU* cpu) { uint8_t v = read_byte(REG_HL); sla(cpu, &v); write_byte(REG_HL, v); }
 static void sra_a(CPU* cpu) { sra(cpu, &REG_A); }
 static void sra_b(CPU* cpu) { sra(cpu, &REG_B); }
-static void sra_c(CPU* cpu) { sra(cpu, &REG_B); }
+static void sra_c(CPU* cpu) { sra(cpu, &REG_C); }
 static void sra_d(CPU* cpu) { sra(cpu, &REG_D); }
 static void sra_e(CPU* cpu) { sra(cpu, &REG_E); }
 static void sra_h(CPU* cpu) { sra(cpu, &REG_H); }
@@ -333,7 +350,7 @@ static void sra_l(CPU* cpu) { sra(cpu, &REG_L); }
 static void sra_hlp(CPU* cpu) { uint8_t v = read_byte(REG_HL); sra(cpu, &v); write_byte(REG_HL, v); }
 static void srl_a(CPU* cpu) { srl(cpu, &REG_A); }
 static void srl_b(CPU* cpu) { srl(cpu, &REG_B); }
-static void srl_c(CPU* cpu) { srl(cpu, &REG_B); }
+static void srl_c(CPU* cpu) { srl(cpu, &REG_C); }
 static void srl_d(CPU* cpu) { srl(cpu, &REG_D); }
 static void srl_e(CPU* cpu) { srl(cpu, &REG_E); }
 static void srl_h(CPU* cpu) { srl(cpu, &REG_H); }
@@ -341,127 +358,111 @@ static void srl_l(CPU* cpu) { srl(cpu, &REG_L); }
 static void srl_hlp(CPU* cpu) { uint8_t v = read_byte(REG_HL); srl(cpu, &v); write_byte(REG_HL, v); }
 // BIT
 static void bit0_b(CPU* cpu) { bit(0, &REG_B, cpu); }
-static void bit0_c(CPU* cpu) { bit(0, &REG_B, cpu); }
+static void bit0_c(CPU* cpu) { bit(0, &REG_C, cpu); }
 static void bit0_d(CPU* cpu) { bit(0, &REG_D, cpu); }
 static void bit0_e(CPU* cpu) { bit(0, &REG_E, cpu); }
 static void bit0_h(CPU* cpu) { bit(0, &REG_H, cpu); }
 static void bit0_l(CPU* cpu) { bit(0, &REG_L, cpu); }
 static void bit0_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(0, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit0_a(CPU* cpu) { bit(0, &REG_A, cpu); }
 
 static void bit1_b(CPU* cpu) { bit(1, &REG_B, cpu); }
-static void bit1_c(CPU* cpu) { bit(1, &REG_B, cpu); }
+static void bit1_c(CPU* cpu) { bit(1, &REG_C, cpu); }
 static void bit1_d(CPU* cpu) { bit(1, &REG_D, cpu); }
 static void bit1_e(CPU* cpu) { bit(1, &REG_E, cpu); }
 static void bit1_h(CPU* cpu) { bit(1, &REG_H, cpu); }
 static void bit1_l(CPU* cpu) { bit(1, &REG_L, cpu); }
 static void bit1_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(1, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit1_a(CPU* cpu) { bit(1, &REG_A, cpu); }
 
 static void bit2_b(CPU* cpu) { bit(2, &REG_B, cpu); }
-static void bit2_c(CPU* cpu) { bit(2, &REG_B, cpu); }
+static void bit2_c(CPU* cpu) { bit(2, &REG_C, cpu); }
 static void bit2_d(CPU* cpu) { bit(2, &REG_D, cpu); }
 static void bit2_e(CPU* cpu) { bit(2, &REG_E, cpu); }
 static void bit2_h(CPU* cpu) { bit(2, &REG_H, cpu); }
 static void bit2_l(CPU* cpu) { bit(2, &REG_L, cpu); }
 static void bit2_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(2, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit2_a(CPU* cpu) { bit(2, &REG_A, cpu); }
 
 static void bit3_b(CPU* cpu) { bit(3, &REG_B, cpu); }
-static void bit3_c(CPU* cpu) { bit(3, &REG_B, cpu); }
+static void bit3_c(CPU* cpu) { bit(3, &REG_C, cpu); }
 static void bit3_d(CPU* cpu) { bit(3, &REG_D, cpu); }
 static void bit3_e(CPU* cpu) { bit(3, &REG_E, cpu); }
 static void bit3_h(CPU* cpu) { bit(3, &REG_H, cpu); }
 static void bit3_l(CPU* cpu) { bit(3, &REG_L, cpu); }
 static void bit3_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(3, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit3_a(CPU* cpu) { bit(3, &REG_A, cpu); }
 
 static void bit4_b(CPU* cpu) { bit(4, &REG_B, cpu); }
-static void bit4_c(CPU* cpu) { bit(4, &REG_B, cpu); }
+static void bit4_c(CPU* cpu) { bit(4, &REG_C, cpu); }
 static void bit4_d(CPU* cpu) { bit(4, &REG_D, cpu); }
 static void bit4_e(CPU* cpu) { bit(4, &REG_E, cpu); }
 static void bit4_h(CPU* cpu) { bit(4, &REG_H, cpu); }
 static void bit4_l(CPU* cpu) { bit(4, &REG_L, cpu); }
 static void bit4_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(4, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit4_a(CPU* cpu) { bit(4, &REG_A, cpu); }
 
 static void bit5_b(CPU* cpu) { bit(5, &REG_B, cpu); }
-static void bit5_c(CPU* cpu) { bit(5, &REG_B, cpu); }
+static void bit5_c(CPU* cpu) { bit(5, &REG_C, cpu); }
 static void bit5_d(CPU* cpu) { bit(5, &REG_D, cpu); }
 static void bit5_e(CPU* cpu) { bit(5, &REG_E, cpu); }
 static void bit5_h(CPU* cpu) { bit(5, &REG_H, cpu); }
 static void bit5_l(CPU* cpu) { bit(5, &REG_L, cpu); }
 static void bit5_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(5, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit5_a(CPU* cpu) { bit(5, &REG_A, cpu); }
 
 static void bit6_b(CPU* cpu) { bit(6, &REG_B, cpu); }
-static void bit6_c(CPU* cpu) { bit(6, &REG_B, cpu); }
+static void bit6_c(CPU* cpu) { bit(6, &REG_C, cpu); }
 static void bit6_d(CPU* cpu) { bit(6, &REG_D, cpu); }
 static void bit6_e(CPU* cpu) { bit(6, &REG_E, cpu); }
 static void bit6_h(CPU* cpu) { bit(6, &REG_H, cpu); }
 static void bit6_l(CPU* cpu) { bit(6, &REG_L, cpu); }
 static void bit6_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(6, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit6_a(CPU* cpu) { bit(6, &REG_A, cpu); }
 
 static void bit7_b(CPU* cpu) { bit(7, &REG_B, cpu); }
-static void bit7_c(CPU* cpu) { bit(7, &REG_B, cpu); }
+static void bit7_c(CPU* cpu) { bit(7, &REG_C, cpu); }
 static void bit7_d(CPU* cpu) { bit(7, &REG_D, cpu); }
 static void bit7_e(CPU* cpu) { bit(7, &REG_E, cpu); }
 static void bit7_h(CPU* cpu) { bit(7, &REG_H, cpu); }
 static void bit7_l(CPU* cpu) { bit(7, &REG_L, cpu); }
 static void bit7_hlp(CPU* cpu) 
 {
-    uint16_t addr = REG_HL;
-    uint8_t val = read_byte(addr);
+    uint8_t val = read_byte(REG_HL);
     bit(7, &val, cpu);
-    write_byte(addr, val);
 }
 static void bit7_a(CPU* cpu) { bit(7, &REG_A, cpu); }
 // RES
 static void res0_b(CPU* cpu) { res(0, &REG_B); }
-static void res0_c(CPU* cpu) { res(0, &REG_B); }
+static void res0_c(CPU* cpu) { res(0, &REG_C); }
 static void res0_d(CPU* cpu) { res(0, &REG_D); }
 static void res0_e(CPU* cpu) { res(0, &REG_E); }
 static void res0_h(CPU* cpu) { res(0, &REG_H); }
@@ -477,7 +478,7 @@ static void res0_a(CPU* cpu) { res(0, &REG_A); }
 
 static void res1_a(CPU* cpu) { REG_A &= ~(1 << 1); }
 static void res1_b(CPU* cpu) { REG_B &= ~(1 << 1); }
-static void res1_c(CPU* cpu) { REG_B &= ~(1 << 1); }
+static void res1_c(CPU* cpu) { REG_C &= ~(1 << 1); }
 static void res1_d(CPU* cpu) { REG_D &= ~(1 << 1); }
 static void res1_e(CPU* cpu) { REG_E &= ~(1 << 1); }
 static void res1_h(CPU* cpu) { REG_H &= ~(1 << 1); }
@@ -492,7 +493,7 @@ static void res1_hlp(CPU* cpu)
 
 static void res2_a(CPU* cpu) { REG_A &= ~(1 << 2); }
 static void res2_b(CPU* cpu) { REG_B &= ~(1 << 2); }
-static void res2_c(CPU* cpu) { REG_B &= ~(1 << 2); }
+static void res2_c(CPU* cpu) { REG_C &= ~(1 << 2); }
 static void res2_d(CPU* cpu) { REG_D &= ~(1 << 2); }
 static void res2_e(CPU* cpu) { REG_E &= ~(1 << 2); }
 static void res2_h(CPU* cpu) { REG_H &= ~(1 << 2); }
@@ -507,7 +508,7 @@ static void res2_hlp(CPU* cpu)
 
 static void res3_a(CPU* cpu) { REG_A &= ~(1 << 3); }
 static void res3_b(CPU* cpu) { REG_B &= ~(1 << 3); }
-static void res3_c(CPU* cpu) { REG_B &= ~(1 << 3); }
+static void res3_c(CPU* cpu) { REG_C &= ~(1 << 3); }
 static void res3_d(CPU* cpu) { REG_D &= ~(1 << 3); }
 static void res3_e(CPU* cpu) { REG_E &= ~(1 << 3); }
 static void res3_h(CPU* cpu) { REG_H &= ~(1 << 3); }
@@ -522,7 +523,7 @@ static void res3_hlp(CPU* cpu)
 
 static void res4_a(CPU* cpu) { REG_A &= ~(1 << 4); }
 static void res4_b(CPU* cpu) { REG_B &= ~(1 << 4); }
-static void res4_c(CPU* cpu) { REG_B &= ~(1 << 4); }
+static void res4_c(CPU* cpu) { REG_C &= ~(1 << 4); }
 static void res4_d(CPU* cpu) { REG_D &= ~(1 << 4); }
 static void res4_e(CPU* cpu) { REG_E &= ~(1 << 4); }
 static void res4_h(CPU* cpu) { REG_H &= ~(1 << 4); }
@@ -537,7 +538,7 @@ static void res4_hlp(CPU* cpu)
 
 static void res5_a(CPU* cpu) { REG_A &= ~(1 << 5); }
 static void res5_b(CPU* cpu) { REG_B &= ~(1 << 5); }
-static void res5_c(CPU* cpu) { REG_B &= ~(1 << 5); }
+static void res5_c(CPU* cpu) { REG_C &= ~(1 << 5); }
 static void res5_d(CPU* cpu) { REG_D &= ~(1 << 5); }
 static void res5_e(CPU* cpu) { REG_E &= ~(1 << 5); }
 static void res5_h(CPU* cpu) { REG_H &= ~(1 << 5); }
@@ -552,7 +553,7 @@ static void res5_hlp(CPU* cpu)
 
 static void res6_a(CPU* cpu) { REG_A &= ~(1 << 6); }
 static void res6_b(CPU* cpu) { REG_B &= ~(1 << 6); }
-static void res6_c(CPU* cpu) { REG_B &= ~(1 << 6); }
+static void res6_c(CPU* cpu) { REG_C &= ~(1 << 6); }
 static void res6_d(CPU* cpu) { REG_D &= ~(1 << 6); }
 static void res6_e(CPU* cpu) { REG_E &= ~(1 << 6); }
 static void res6_h(CPU* cpu) { REG_H &= ~(1 << 6); }
@@ -567,7 +568,7 @@ static void res6_hlp(CPU* cpu)
 
 static void res7_a(CPU* cpu) { REG_A &= ~(1 << 7); }
 static void res7_b(CPU* cpu) { REG_B &= ~(1 << 7); }
-static void res7_c(CPU* cpu) { REG_B &= ~(1 << 7); }
+static void res7_c(CPU* cpu) { REG_C &= ~(1 << 7); }
 static void res7_d(CPU* cpu) { REG_D &= ~(1 << 7); }
 static void res7_e(CPU* cpu) { REG_E &= ~(1 << 7); }
 static void res7_h(CPU* cpu) { REG_H &= ~(1 << 7); }
@@ -581,7 +582,7 @@ static void res7_hlp(CPU* cpu)
 }
 // SET
 static void set0_b(CPU* cpu) { set(0, &REG_B); }
-static void set0_c(CPU* cpu) { set(0, &REG_B); }
+static void set0_c(CPU* cpu) { set(0, &REG_C); }
 static void set0_d(CPU* cpu) { set(0, &REG_D); }
 static void set0_e(CPU* cpu) { set(0, &REG_E); }
 static void set0_h(CPU* cpu) { set(0, &REG_H); }
@@ -597,7 +598,7 @@ static void set0_a(CPU* cpu) { set(0, &REG_A); }
 
 static void set1_a(CPU* cpu) { REG_A |= (1 << 1); }
 static void set1_b(CPU* cpu) { REG_B |= (1 << 1); }
-static void set1_c(CPU* cpu) { REG_B |= (1 << 1); }
+static void set1_c(CPU* cpu) { REG_C |= (1 << 1); }
 static void set1_d(CPU* cpu) { REG_D |= (1 << 1); }
 static void set1_e(CPU* cpu) { REG_E |= (1 << 1); }
 static void set1_h(CPU* cpu) { REG_H |= (1 << 1); }
@@ -612,7 +613,7 @@ static void set1_hlp(CPU* cpu)
 
 static void set2_a(CPU* cpu) { REG_A |= (1 << 2); }
 static void set2_b(CPU* cpu) { REG_B |= (1 << 2); }
-static void set2_c(CPU* cpu) { REG_B |= (1 << 2); }
+static void set2_c(CPU* cpu) { REG_C |= (1 << 2); }
 static void set2_d(CPU* cpu) { REG_D |= (1 << 2); }
 static void set2_e(CPU* cpu) { REG_E |= (1 << 2); }
 static void set2_h(CPU* cpu) { REG_H |= (1 << 2); }
@@ -627,7 +628,7 @@ static void set2_hlp(CPU* cpu)
 
 static void set3_a(CPU* cpu) { REG_A |= (1 << 3); }
 static void set3_b(CPU* cpu) { REG_B |= (1 << 3); }
-static void set3_c(CPU* cpu) { REG_B |= (1 << 3); }
+static void set3_c(CPU* cpu) { REG_C |= (1 << 3); }
 static void set3_d(CPU* cpu) { REG_D |= (1 << 3); }
 static void set3_e(CPU* cpu) { REG_E |= (1 << 3); }
 static void set3_h(CPU* cpu) { REG_H |= (1 << 3); }
@@ -642,7 +643,7 @@ static void set3_hlp(CPU* cpu)
 
 static void set4_a(CPU* cpu) { REG_A |= (1 << 4); }
 static void set4_b(CPU* cpu) { REG_B |= (1 << 4); }
-static void set4_c(CPU* cpu) { REG_B |= (1 << 4); }
+static void set4_c(CPU* cpu) { REG_C |= (1 << 4); }
 static void set4_d(CPU* cpu) { REG_D |= (1 << 4); }
 static void set4_e(CPU* cpu) { REG_E |= (1 << 4); }
 static void set4_h(CPU* cpu) { REG_H |= (1 << 4); }
@@ -657,7 +658,7 @@ static void set4_hlp(CPU* cpu)
 
 static void set5_a(CPU* cpu) { REG_A |= (1 << 5); }
 static void set5_b(CPU* cpu) { REG_B |= (1 << 5); }
-static void set5_c(CPU* cpu) { REG_B |= (1 << 5); }
+static void set5_c(CPU* cpu) { REG_C |= (1 << 5); }
 static void set5_d(CPU* cpu) { REG_D |= (1 << 5); }
 static void set5_e(CPU* cpu) { REG_E |= (1 << 5); }
 static void set5_h(CPU* cpu) { REG_H |= (1 << 5); }
@@ -672,7 +673,7 @@ static void set5_hlp(CPU* cpu)
 
 static void set6_a(CPU* cpu) { REG_A |= (1 << 6); }
 static void set6_b(CPU* cpu) { REG_B |= (1 << 6); }
-static void set6_c(CPU* cpu) { REG_B |= (1 << 6); }
+static void set6_c(CPU* cpu) { REG_C |= (1 << 6); }
 static void set6_d(CPU* cpu) { REG_D |= (1 << 6); }
 static void set6_e(CPU* cpu) { REG_E |= (1 << 6); }
 static void set6_h(CPU* cpu) { REG_H |= (1 << 6); }
@@ -687,7 +688,7 @@ static void set6_hlp(CPU* cpu)
 
 static void set7_a(CPU* cpu) { REG_A |= (1 << 7); }
 static void set7_b(CPU* cpu) { REG_B |= (1 << 7); }
-static void set7_c(CPU* cpu) { REG_B |= (1 << 7); }
+static void set7_c(CPU* cpu) { REG_C |= (1 << 7); }
 static void set7_d(CPU* cpu) { REG_D |= (1 << 7); }
 static void set7_e(CPU* cpu) { REG_E |= (1 << 7); }
 static void set7_h(CPU* cpu) { REG_H |= (1 << 7); }
@@ -1078,6 +1079,18 @@ void init_opcodes()
     opcodes[0xCC] = nop; // call_z_op
     opcodes[0xD4] = nop; // call_nc_op
     opcodes[0xDC] = nop; // call_c_op
+    
+    // PUSH
+    opcodes[0xC5] = push_bc;
+    opcodes[0xD5] = push_de;
+    opcodes[0xE5] = push_hl;
+    opcodes[0xF5] = push_af;
+
+    // POP
+    opcodes[0xC1] = pop_bc;
+    opcodes[0xD1] = pop_de;
+    opcodes[0xE1] = pop_hl;
+    opcodes[0xF1] = pop_af;
 
     // RST
     opcodes[0xC7] = rst_00;

@@ -3,6 +3,7 @@
 #include "instructions/instructions.h"
 #include "opcodes.h"
 #include "memory.h"
+#include <stdint.h>
 #include <stdio.h>
 
 Timer cpu_timer;
@@ -84,11 +85,50 @@ static void timer_tick(CPU* cpu, int cycles)
     }
 }
 
-uint16_t cpu_step(CPU* cpu, PPU* ppu, DMA* dma)
+void cpu_init(CPU* cpu)
 {
+    memset(cpu, 0, sizeof(CPU));
+    REG_AF = 0x01B0;
+    REG_BC = 0x0013;
+    REG_DE = 0x00D8;
+    REG_HL = 0x014D;
+    REG_SP = 0xFFFE;
+    REG_PC = 0x0000;
+
+    cpu->IME = 0;
+    cpu->halted = 0;
+    cpu->stopped = 0;
+    cpu->halt_bug = 0;
+    cpu->pending_enable_interrupts = 0;
+    cpu->pending_disable_interrupts = 0;
+
+    cpu_timer.cycle_counter = 0;
+    memory[ADDR_DIV] = 0;
+    memory[ADDR_TIMA] = 0;
+    memory[ADDR_TMA] = 0;
+    memory[ADDR_TAC] = 0;
+}
+
+uint16_t cpu_step(CPU* cpu, PPU* ppu)
+{
+    if (cpu->PC >= 0x0098 && cpu->PC <= 0x00A2) {
+        printf("BOOT: PC=%04X op=%02X B=%02X F=%02X (Z=%d,C=%d,H=%d,N=%d)\n",
+               cpu->PC, read_byte(cpu->PC), cpu->bc.B, cpu->af.F,
+               (cpu->af.F & FLAG_Z) ? 1 : 0,
+               (cpu->af.F & FLAG_C) ? 1 : 0, 
+               (cpu->af.F & FLAG_H) ? 1 : 0,
+               (cpu->af.F & FLAG_N) ? 1 : 0);
+    }
+    current_pc_debug = REG_PC;
+    if (cpu->PC >= 0x0090 && cpu->PC <= 0x00B0) {
+        printf("BOOT ROM: PC=%04X opcode=%02X LCDC=%02X LY=%02X\n", 
+               cpu->PC, read_byte(cpu->PC), memory[0xFF40], memory[0xFF44]);
+    }
+
     if (cpu->halted)
     {
         timer_tick(cpu, 1);
+        ppu_step(ppu, 1);
         if (memory[ADDR_IF] & memory[ADDR_IE])
             cpu->halted = 0;
         return 1;
@@ -98,12 +138,12 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu, DMA* dma)
 
     uint8_t exec_twice = cpu->halt_bug;
     if (cpu->halt_bug) cpu->halt_bug = 0;
-    uint8_t opcode = memory[REG_PC++];
+    uint8_t opcode = read_byte(REG_PC++);
     uint16_t cycles;
 
     if (opcode == 0xCB)
     {
-        uint8_t cb_opcode = memory[REG_PC++];
+        uint8_t cb_opcode = read_byte(REG_PC++);
         cb_opcodes[cb_opcode](cpu);
         cycles = cb_opcode_cycles[cb_opcode];
     }
@@ -157,11 +197,16 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu, DMA* dma)
         return cpu_step(cpu, ppu);
     }
 
-    for (uint16_t i = 0; i < cycles; i++)
+    timer_tick(cpu, cycles);
+
+    for (int i = 0; i < cycles && dma.active; i++)
+        dma_step();
+
+    ppu_step(ppu, cycles);
+    if (REG_PC >= 0x0090 && REG_PC <= 0x00A0) 
     {
-        timer_tick(cpu, 1);
-        dma_step(dma);
-        ppu_step(ppu, 1);
+        printf("Boot ROM LCD sequence: PC=%04X LCDC=%02X LY=%02X\n", 
+               REG_PC, memory[0xFF40], memory[0xFF44]);
     }
     if (cpu->IME && (memory[ADDR_IF] & memory[ADDR_IE]))
         handle_interrupt(cpu);

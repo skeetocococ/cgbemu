@@ -73,7 +73,9 @@ void ldh_a_n(CPU* cpu)
 
 void ld_n_nn(CPU* cpu, uint16_t* dest) 
 {
-    uint16_t addr = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8);
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    uint16_t addr = (high << 8) | low;
     *dest = read_byte(addr) | (read_byte(addr + 1) << 8); // address of next two bytes into register
 }
 
@@ -94,7 +96,9 @@ void ldhl_sp_n(CPU* cpu)
 
 void ld_nn_sp(CPU* cpu)
 {
-    uint16_t addr = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8);
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    uint16_t addr = (high << 8) | low;
     write_byte(addr, REG_SP & 0xFF);
     write_byte(addr + 1, REG_SP >> 8);
 }
@@ -213,11 +217,12 @@ void dec_n(CPU* cpu, uint8_t* reg)
     uint8_t value = *reg;
     uint8_t result = value - 1;
     // Preserve carry flag
-    uint8_t carry = REG_F & FLAG_C;
+    uint8_t flags = (REG_F & FLAG_C) | FLAG_N;
     // Set N, compute H for half-borrow
-    REG_F = carry | FLAG_N;  
-    if ((value & 0xF) == 0) REG_F |= FLAG_H; // half-borrow
-    if (result == 0) REG_F |= FLAG_Z;        // zero flag
+    //REG_F = carry | FLAG_N;  
+    if ((value & 0x0F) != 0x00) flags |= FLAG_H; // half-borrow
+    if (result == 0) flags |= FLAG_Z;        // zero flag
+    REG_F = flags;
     *reg = result;
 }
 
@@ -395,7 +400,10 @@ void jp_nn(CPU* cpu)
 
 uint8_t jp_cc_nn(CPU* cpu, Condition condition)
 {
-    uint16_t addr =  read_byte(REG_PC++) | (read_byte(REG_PC++) << 8);
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    uint16_t addr = (high << 8) | low;
+
     uint8_t taken = 0;
     switch (condition)
     {
@@ -479,14 +487,19 @@ uint8_t jr_cc_n(CPU* cpu, Condition condition)
 
 void call_nn(CPU* cpu)
 {
-    uint16_t addr = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8);
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    uint16_t addr = (high << 8) | low;
     push_nn(cpu, REG_PC);
     REG_PC = addr;
 }
 
 uint8_t call_cc_nn(CPU* cpu, Condition condition)
 {
-    uint16_t addr = read_byte(REG_PC++) | (read_byte(REG_PC++) << 8);
+    uint8_t low = read_byte(REG_PC++);
+    uint8_t high = read_byte(REG_PC++);
+    uint16_t addr = (high << 8) | low;
+
     switch (condition)
     {
         case NZ:

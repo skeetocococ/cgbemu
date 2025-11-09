@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+extern uint16_t current_pc_debug;
 #define MEM_SIZE 65536
 extern uint8_t memory[MEM_SIZE];
 extern uint8_t* vram;
@@ -56,7 +57,7 @@ extern DMA dma;
 
 void write_byte(uint16_t addr, uint8_t val);
 uint8_t read_byte(uint16_t addr);
-void dma_step(DMA* dma);
-void bootstrap();
+void dma_step();
+void bootstrap(char* rom);
 
 #endif // MEMORY_H
