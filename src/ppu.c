@@ -1,6 +1,7 @@
 #include "ppu.h"
 #include "cpu.h"
 #include "memory.h"
+#include "debug.h"
 #include <SDL2/SDL.h>
 
 static uint8_t get_background_color_id(PPU *ppu, int x, int y)
@@ -56,17 +57,16 @@ static void render_scanline(PPU* ppu)
         return;
     }
 
-    static int debug_once = 0;
-    if (!debug_once && y == 0)
+    if (debug && y == 0)
     {
-        printf("=== Rendering scanline 0 ===\n");
-        printf("LCDC=%02X BGP=%02X\n", ppu->LCDC, memory[0xFF47]);
-        printf("SCX=%d SCY=%d\n", ppu->SCX, ppu->SCY);
+        DBG_PRINT("=== Rendering scanline 0 ===\n");
+        DBG_PRINT("LCDC=%02X BGP=%02X\n", ppu->LCDC, memory[0xFF47]);
+        DBG_PRINT("SCX=%d SCY=%d\n", ppu->SCX, ppu->SCY);
         
         // Check first tile
         uint16_t tilemap_base = (ppu->LCDC & 0x08) ? 0x9C00 : 0x9800;
-        printf("Tilemap base: 0x%04X\n", tilemap_base);
-        printf("First tile ID: 0x%02X\n", memory[tilemap_base]);
+        DBG_PRINT("Tilemap base: 0x%04X\n", tilemap_base);
+        DBG_PRINT("First tile ID: 0x%02X\n", memory[tilemap_base]);
         
         // Check tile data
         uint8_t tile_id = memory[tilemap_base];
@@ -78,17 +78,16 @@ static void render_scanline(PPU* ppu)
         {
             tile_addr = 0x9000 + ((int8_t)tile_id * 16);
         }
-        printf("First tile address: 0x%04X\n", tile_addr);
-        printf("First tile data: %02X %02X\n", memory[tile_addr], memory[tile_addr+1]);
+        DBG_PRINT("First tile address: 0x%04X\n", tile_addr);
+        DBG_PRINT("First tile data: %02X %02X\n", memory[tile_addr], memory[tile_addr+1]);
         
         uint8_t color_id = get_background_color_id(ppu, 0, 0);
-        printf("First pixel color_id: %d\n", color_id);
-        printf("Palette mapping: 0->%d 1->%d 2->%d 3->%d\n",
+        DBG_PRINT("First pixel color_id: %d\n", color_id);
+        DBG_PRINT("Palette mapping: 0->%d 1->%d 2->%d 3->%d\n",
                (memory[0xFF47] >> 0) & 3,
                (memory[0xFF47] >> 2) & 3,
                (memory[0xFF47] >> 4) & 3,
                (memory[0xFF47] >> 6) & 3);
-        debug_once = 1;
     }
 
     uint8_t bg_ids[160]; // for sprite priority
