@@ -1,7 +1,7 @@
 #include "opcodes.h"
 #include "cpu.h"
-#include "instructions/instructions.h"
-#include "memory.h"
+#include "instructions.h"
+#include "../memory.h"
 
 // MISC
 static void nop(CPU* cpu) {} // Do nothing
@@ -275,10 +275,6 @@ static void op_cpl(CPU* cpu) { cpl_a(cpu); }
 static void op_ccf(CPU* cpu) { ccf(cpu); }
 static void op_scf(CPU* cpu) { scf(cpu); }
 // ROTATE
-static void op_rlca(CPU* cpu) { rlc(cpu, &REG_A); }
-static void op_rla(CPU* cpu)  { rl(cpu, &REG_A); }
-static void op_rrca(CPU* cpu) { rrc(cpu, &REG_A); }
-static void op_rra(CPU* cpu)  { rrn(cpu, &REG_A); }
 static void rlc_a(CPU* cpu) { rlc(cpu, &REG_A); }
 static void rlc_b(CPU* cpu) { rlc(cpu, &REG_B); }
 static void rlc_c(CPU* cpu) { rlc(cpu, &REG_C); }

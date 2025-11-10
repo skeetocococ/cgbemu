@@ -59,5 +59,6 @@ void write_byte(uint16_t addr, uint8_t val);
 uint8_t read_byte(uint16_t addr);
 void dma_step();
 void bootstrap(char* rom);
+void init_hardware_reg();
 
 #endif // MEMORY_H

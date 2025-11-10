@@ -1,6 +1,6 @@
 #include "instructions.h"
 #include "../memory.h"
-#include "../cpu.h"
+#include "cpu.h"
 #include <stdint.h>
 
 void ld_rx_ry(CPU* cpu, uint8_t* dest, uint8_t* src) { *dest = *src; } // ry into rx

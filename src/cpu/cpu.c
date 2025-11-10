@@ -1,9 +1,9 @@
 #include "cpu.h"
-#include "ppu.h"
-#include "instructions/instructions.h"
+#include "../io/ppu.h"
+#include "instructions.h"
 #include "opcodes.h"
-#include "memory.h"
-#include "debug.h"
+#include "../memory.h"
+#include "../debug/debug.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -44,7 +44,7 @@ static void handle_interrupt(CPU* cpu)
     }
 }
 
-static void timer_tick(CPU* cpu, int cycles)
+static void timer_tick(int cycles)
 {
     cpu_timer.div_counter += cycles;
     while (cpu_timer.div_counter >= 256) 
@@ -131,7 +131,7 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu)
 
     if (cpu->halted)
     {
-        timer_tick(cpu, 1);
+        timer_tick(1);
         ppu_step(ppu, 1);
         if (memory[ADDR_IF] & memory[ADDR_IE])
             cpu->halted = 0;
@@ -201,7 +201,7 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu)
         return cpu_step(cpu, ppu);
     }
 
-    timer_tick(cpu, cycles);
+    timer_tick(cycles);
 
     for (int i = 0; i < cycles && dma.active; i++)
         dma_step();

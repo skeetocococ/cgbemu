@@ -2,8 +2,8 @@
 #define CPU_H
 
 #include <stdint.h>
-#include "memory.h"
-#include "ppu.h"
+#include "../memory.h"
+#include "../io/ppu.h"
 
 // Flags
 #define FLAG_Z 0x80 // 0b10000000

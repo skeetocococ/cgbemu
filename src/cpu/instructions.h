@@ -1,7 +1,7 @@
 #ifndef INSTRUCTIONS_H
 #define INSTRUCTIONS_H
 
-#include "../cpu.h"
+#include "cpu.h"
 
 // Instruction pattern prototypes
 void ld_rx_ry(CPU* cpu, uint8_t* dest, uint8_t* src);

@@ -1,5 +1,5 @@
 #include "joypad.h"
-#include "cpu.h"
+#include "../cpu/cpu.h"
 
 Joypad joypad = { 0xFF, 0xFF };
 

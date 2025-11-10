@@ -1,7 +1,7 @@
 #include "ppu.h"
-#include "cpu.h"
-#include "memory.h"
-#include "debug.h"
+#include "../cpu/cpu.h"
+#include "../memory.h"
+#include "../debug/debug.h"
 #include <SDL2/SDL.h>
 
 static uint8_t get_background_color_id(PPU *ppu, int x, int y)
