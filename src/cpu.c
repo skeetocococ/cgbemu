@@ -3,6 +3,7 @@
 #include "instructions/instructions.h"
 #include "opcodes.h"
 #include "memory.h"
+#include "debug.h"
 #include <stdint.h>
 #include <stdio.h>
 
