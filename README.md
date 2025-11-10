@@ -20,3 +20,9 @@ Or if object files are desired:
 ```
 make objects
 ```
+
+The emulator is started by commandline
+```
+Usage: (NAME OF PROGRAM) [--debug] <game.gb> [boot.gb]\n"
+```
+[] means optional.
