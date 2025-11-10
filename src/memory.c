@@ -1,6 +1,7 @@
 #include "memory.h"
 #include "joypad.h"
 #include "cpu.h"
+#include "debug.h"
 
 uint16_t current_pc_debug = 0;
 
@@ -19,7 +20,7 @@ void write_byte(uint16_t addr, uint8_t val)
 {
     if (current_pc_debug >= 0x0090 && current_pc_debug <= 0x00B0) 
     {
-        printf("WRITE: PC=%04X writing 0x%02X to 0x%04X\n", current_pc_debug, val, addr);
+        DBG_PRINT("WRITE: PC=%04X writing 0x%02X to 0x%04X\n", current_pc_debug, val, addr);
     }
     if (addr == ADDR_DIV) 
     {
@@ -37,7 +38,7 @@ void write_byte(uint16_t addr, uint8_t val)
     }
     if (addr == 0xFF40) 
     {
-        printf("LCDC write: 0x%02X -> 0xFF40 (current LY=%02X)\n", val, memory[0xFF44]);
+        DBG_PRINT("LCDC write: 0x%02X -> 0xFF40 (current LY=%02X)\n", val, memory[0xFF44]);
         memory[addr] = val;
         return;
     }
@@ -66,7 +67,7 @@ void write_byte(uint16_t addr, uint8_t val)
     memory[addr] = val;
 
     if (addr == 0xA000 || addr == 0xA001)
-        printf("\n[Test wrote 0x%02X to 0x%04X]\n", val, addr);
+        DBG_PRINT("\n[Test wrote 0x%02X to 0x%04X]\n", val, addr);
 }
 
 uint8_t read_byte(uint16_t addr) 
