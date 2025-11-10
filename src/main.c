@@ -3,9 +3,12 @@
 #include "opcodes.h"
 #include "ppu.h"
 #include "joypad.h"
+#include "debug.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
 #include <string.h>
+
+int debug = 0;
 
 void init_hardware_reg()
 {
@@ -47,9 +50,33 @@ void init_hardware_reg()
 
 int main(int argc, char** argv)
 { 
-    if (argc < 2)
+    char* game_path = NULL;
+    char* boot_path = NULL;
+    
+    for (int i = 1; i < argc; i++) 
     {
-        printf("Usage: %s <game.gb> [boot.gb]\n", argv[0]);
+        if (strcmp(argv[i], "--debug") == 0) 
+        {
+            debug = 1;
+            continue;
+        }
+    
+        if (!game_path) 
+        {
+            game_path = argv[i];
+            continue;
+        }
+    
+        if (!boot_path) 
+        {
+            boot_path = argv[i];
+            continue;
+        }
+    }
+    
+    if (!game_path) 
+    {
+        printf("Usage: %s [--debug] <game.gb> [boot.gb]\n", argv[0]);
         return 1;
     }
     
@@ -71,7 +98,7 @@ int main(int argc, char** argv)
                                          SDL_TEXTUREACCESS_STREAMING,
                                          160, 144);
     
-    FILE* game_rom = fopen(argv[1], "rb");
+    FILE* game_rom = fopen(game_path, "rb");
     if (!game_rom)
     {
         fprintf(stderr, "Failed to open ROM file: %s\n", argv[1]);
@@ -88,9 +115,9 @@ int main(int argc, char** argv)
     ppu_init(&ppu);
     
     // Handle boot ROM or skip to 0x0100
-    if (argc >= 3)
+    if (boot_path != NULL)
     {
-        bootstrap(argv[2]);
+        bootstrap(boot_path);
         printf("Boot ROM enabled. First 16 bytes:\n");
         for (int i = 0; i < 16; i++) 
         {
@@ -144,40 +171,46 @@ int main(int argc, char** argv)
             uint16_t sp_before = cpu.SP;
             uint8_t opcode = read_byte(cpu.PC);
             
-            // Debug first 50 instructions
-            if (instruction_count < 50)
+            if (debug)
             {
-                printf("Inst %3d: PC=%04X SP=%04X opcode=%02X | AF=%04X BC=%04X DE=%04X HL=%04X\n",
-                       instruction_count, pc_before, sp_before, opcode, 
-                       cpu.af.AF, cpu.bc.BC, cpu.de.DE, cpu.hl.HL);
-                instruction_count++;
+                // Debug first 50 instructions
+                if (instruction_count < 50)
+                {
+                    DBG_PRINT("Inst %3d: PC=%04X SP=%04X opcode=%02X | AF=%04X BC=%04X DE=%04X HL=%04X\n",
+                           instruction_count, pc_before, sp_before, opcode, 
+                           cpu.af.AF, cpu.bc.BC, cpu.de.DE, cpu.hl.HL);
+                    instruction_count++;
+                }
             }
             
             cycles += cpu_step(&cpu, &ppu);
             
-            // Check whether stuck at 0x009F (boot ROM LCD wait)
-            if (pc_before == 0x009F && cpu.PC == 0x009F && !waiting_for_lcd) {
-                printf("\n*** CPU stuck at 0x009F - this is the LCD wait loop in boot ROM ***\n");
-                printf("Opcode: 0x%02X at 0x009F\n", opcode);
-                printf("LCDC register (0xFF40): 0x%02X (bit 7 = LCD on/off)\n", memory[0xFF40]);
-                printf("LY register (0xFF44): 0x%02X\n", memory[0xFF44]);
-                printf("This loop waits for LY to reach 144, but LCDC bit 7 is 0 (LCD off)\n");
-                printf("Boot ROM needs to turn on LCD first!\n");
-                waiting_for_lcd = 1;
-            }
-            
-            // Detect if PC went in invalid memory
-            if (cpu.PC >= 0xFF00 && cpu.PC < 0xFF80)
+            if (debug)
             {
-                printf("\n!!! CPU crashed! PC is in hardware registers: 0x%04X !!!\n", cpu.PC);
-                printf("PC before: 0x%04X, SP before: 0x%04X, opcode was: 0x%02X\n", 
-                       pc_before, sp_before, opcode);
-                printf("Stack at SP:\n");
-                for (int i = 0; i < 8; i++)
-                    printf("  [0x%04X] = 0x%02X\n", sp_before + i, read_byte(sp_before + i));
-                print_cpu_state(&cpu);
-                running = 0;
-                break;
+                // Check whether stuck at 0x009F (boot ROM LCD wait)
+                if (pc_before == 0x009F && cpu.PC == 0x009F && !waiting_for_lcd) {
+                    DBG_PRINT("\n*** CPU stuck at 0x009F - this is the LCD wait loop in boot ROM ***\n");
+                    DBG_PRINT("Opcode: 0x%02X at 0x009F\n", opcode);
+                    DBG_PRINT("LCDC register (0xFF40): 0x%02X (bit 7 = LCD on/off)\n", memory[0xFF40]);
+                    DBG_PRINT("LY register (0xFF44): 0x%02X\n", memory[0xFF44]);
+                    DBG_PRINT("This loop waits for LY to reach 144, but LCDC bit 7 is 0 (LCD off)\n");
+                    DBG_PRINT("Boot ROM needs to turn on LCD first!\n");
+                    waiting_for_lcd = 1;
+                }
+                
+                // Detect if PC went in invalid memory
+                if (cpu.PC >= 0xFF00 && cpu.PC < 0xFF80)
+                {
+                    DBG_PRINT("\n!!! CPU crashed! PC is in hardware registers: 0x%04X !!!\n", cpu.PC);
+                    DBG_PRINT("PC before: 0x%04X, SP before: 0x%04X, opcode was: 0x%02X\n", 
+                           pc_before, sp_before, opcode);
+                    DBG_PRINT("Stack at SP:\n");
+                    for (int i = 0; i < 8; i++)
+                        DBG_PRINT("  [0x%04X] = 0x%02X\n", sp_before + i, read_byte(sp_before + i));
+                    print_cpu_state(&cpu);
+                    running = 0;
+                    break;
+                }
             }
         }
         
@@ -211,10 +244,13 @@ int main(int argc, char** argv)
                 last_pc = cpu.PC;
             }
             
-            if (frame_count % 60 == 0)
+            if (debug)
             {
-                printf("Frame %d: PC=0x%04X SP=0x%04X LCDC=0x%02X BGP=0x%02X\n", 
-                       frame_count, cpu.PC, cpu.SP, memory[0xFF40], memory[0xFF47]);
+                if (frame_count % 60 == 0)
+                {
+                    DBG_PRINT("Frame %d: PC=0x%04X SP=0x%04X LCDC=0x%02X BGP=0x%02X\n", 
+                           frame_count, cpu.PC, cpu.SP, memory[0xFF40], memory[0xFF47]);
+                }
             }
             
             render_frame(renderer, texture, ppu.framebuffer);
