@@ -37,9 +37,16 @@ all: $(TARGET)
 $(TARGET):
 	$(CC) $(CFLAGS) $(SRCS) -o $@ $(LDFLAGS)
 
-# Optional: generate object files
-$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
+DEPFLAGS = -MMD -MP
+
+# Object files
+OBJS = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
+
+$(OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+-include $(OBJS:.o=.d)
 
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
