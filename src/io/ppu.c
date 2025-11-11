@@ -251,6 +251,7 @@ void ppu_step(PPU *ppu, int cycles)
                     ppu->mode_clock -= 80;
                     ppu->mode = VRAM;
                     memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x03;  // Mode 3
+                    vram_block = 1;
                 }
                 break;
                 
@@ -261,6 +262,7 @@ void ppu_step(PPU *ppu, int cycles)
                     render_scanline(ppu);
                     ppu->mode = HBLANK;
                     memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x00;  // Mode 0
+                    vram_block = 0;
                     
                     // STAT interrupt for HBLANK
                     if (memory[0xFF41] & 0x08)
