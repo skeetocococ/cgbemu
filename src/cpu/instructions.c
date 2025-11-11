@@ -220,7 +220,7 @@ void dec_n(CPU* cpu, uint8_t* reg)
     uint8_t flags = (REG_F & FLAG_C) | FLAG_N;
     // Set N, compute H for half-borrow
     //REG_F = carry | FLAG_N;  
-    if ((value & 0x0F) != 0x00) flags |= FLAG_H; // half-borrow
+    if ((value & 0x0F) == 0x00) flags |= FLAG_H; // half-borrow
     if (result == 0) flags |= FLAG_Z;        // zero flag
     REG_F = flags;
     *reg = result;
