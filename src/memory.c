@@ -4,6 +4,7 @@
 #include "debug/debug.h"
 
 uint16_t current_pc_debug = 0;
+int vram_block = 0;
 
 uint8_t memory[MEM_SIZE];
 uint8_t* vram = &memory[VRAM_START]; 
@@ -61,9 +62,9 @@ void write_byte(uint16_t addr, uint8_t val)
         return;
     }
     
-    // Block writes to VRAM/OAM during DMA (optional - not critical)
-    //if (dma.active && addr >= VRAM_START && addr < 0xA000) return;
-    //if (dma.active && addr >= OAM_START && addr < 0xFEA0) return;
+    // Block writes to VRAM/OAM
+    if (vram_block && addr >= VRAM_START && addr < 0xA000) return;
+    if (dma.active && addr >= OAM_START && addr < 0xFEA0) return;
     
     memory[addr] = val;
 
@@ -93,9 +94,9 @@ uint8_t read_byte(uint16_t addr)
         return result;
     }
     
-    // Block reads from VRAM/OAM during DMA
+    // Block reads from VRAM/OAM
     if (dma.active && addr >= 0xFE00 && addr < 0xFEA0) return 0xFF;
-    if (dma.active && addr >= 0x8000 && addr < 0xA000) return 0xFF;
+    if (vram_block && addr >= 0x8000 && addr < 0xA000) return 0xFF;
     
     return memory[addr];
 }
