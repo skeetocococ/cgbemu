@@ -4,7 +4,7 @@
 #include "debug/debug.h"
 
 uint16_t current_pc_debug = 0;
-int vram_block = 0;
+uint8_t vram_block = 0;
 
 uint8_t memory[MEM_SIZE];
 uint8_t* vram = &memory[VRAM_START]; 
