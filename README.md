@@ -23,6 +23,8 @@ make objects
 
 The emulator is started by commandline
 ```
-Usage: (NAME OF PROGRAM) [--debug] <game.gb> [boot.gb]\n"
+Usage: (NAME OF PROGRAM) <game.gb> [boot.gb]\n"
 ```
 [] means optional.
+Before or after providing the game (and optionally boot rom), use the flag `--debug` or `-d` for debugging.
+also `-dCPU` for debugging the CPU, `-dPPU` for the PPU, `-dMEM` for memory and `-dBOOT` for boot.
