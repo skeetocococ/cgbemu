@@ -15,11 +15,20 @@ int main(int argc, char** argv)
     
     for (int i = 1; i < argc; i++) 
     {
-        if (strcmp(argv[i], "--debug") == 0) 
+        if (strcmp(argv[i], "--debug") == 0 
+            || strcmp(argv[i], "-d") == 0) 
         {
             debug = 1;
             continue;
         }
+        if (strcmp(argv[i], "-dCPU") == 0)
+            dbg.dbg_cpu = 1;
+        if (strcmp(argv[i], "-dPPU") == 0)
+            dbg.dbg_ppu = 1;
+        if (strcmp(argv[i], "-dBOOT") == 0)
+            dbg.dbg_boot = 1;
+        if (strcmp(argv[i], "-dMEM") == 0)
+            dbg.dbg_mem = 1;
     
         if (!game_path) 
         {
@@ -131,7 +140,7 @@ int main(int argc, char** argv)
             uint16_t sp_before = cpu.SP;
             uint8_t opcode = read_byte(cpu.PC);
             
-            if (debug)
+            if (dbg.dbg_cpu)
             {
                 // Debug first 50 instructions
                 if (instruction_count < 50)
@@ -148,7 +157,8 @@ int main(int argc, char** argv)
             if (debug)
             {
                 // Check whether stuck at 0x009F (boot ROM LCD wait)
-                if (pc_before == 0x009F && cpu.PC == 0x009F && !waiting_for_lcd) {
+                if (dbg.dbg_ppu && pc_before == 0x009F && cpu.PC == 0x009F && !waiting_for_lcd) 
+                {
                     DBG_PRINT("\n*** CPU stuck at 0x009F - this is the LCD wait loop in boot ROM ***\n");
                     DBG_PRINT("Opcode: 0x%02X at 0x009F\n", opcode);
                     DBG_PRINT("LCDC register (0xFF40): 0x%02X (bit 7 = LCD on/off)\n", memory[0xFF40]);
@@ -159,7 +169,7 @@ int main(int argc, char** argv)
                 }
                 
                 // Detect if PC went in invalid memory
-                if (cpu.PC >= 0xFF00 && cpu.PC < 0xFF80)
+                if (dbg.dbg_cpu && cpu.PC >= 0xFF00 && cpu.PC < 0xFF80)
                 {
                     DBG_PRINT("\n!!! CPU crashed! PC is in hardware registers: 0x%04X !!!\n", cpu.PC);
                     DBG_PRINT("PC before: 0x%04X, SP before: 0x%04X, opcode was: 0x%02X\n", 
@@ -204,7 +214,7 @@ int main(int argc, char** argv)
                 last_pc = cpu.PC;
             }
             
-            if (debug)
+            if (dbg.dbg_ppu)
             {
                 if (frame_count % 60 == 0)
                 {

@@ -112,9 +112,10 @@ void cpu_init(CPU* cpu)
 
 uint16_t cpu_step(CPU* cpu, PPU* ppu)
 {
-    if (debug)
+    if (dbg.dbg_boot)
     {
-        if (cpu->PC >= 0x0098 && cpu->PC <= 0x00A2) {
+        if (cpu->PC >= 0x0098 && cpu->PC <= 0x00A2) 
+        {
             DBG_PRINT("BOOT: PC=%04X op=%02X B=%02X F=%02X (Z=%d,C=%d,H=%d,N=%d)\n",
                    cpu->PC, read_byte(cpu->PC), cpu->bc.B, cpu->af.F,
                    (cpu->af.F & FLAG_Z) ? 1 : 0,
@@ -123,7 +124,8 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu)
                    (cpu->af.F & FLAG_N) ? 1 : 0);
         }
         current_pc_debug = REG_PC;
-        if (cpu->PC >= 0x0090 && cpu->PC <= 0x00B0) {
+        if (cpu->PC >= 0x0090 && cpu->PC <= 0x00B0) 
+        {
             DBG_PRINT("BOOT ROM: PC=%04X opcode=%02X LCDC=%02X LY=%02X\n", 
                    cpu->PC, read_byte(cpu->PC), memory[0xFF40], memory[0xFF44]);
         }
@@ -207,7 +209,7 @@ uint16_t cpu_step(CPU* cpu, PPU* ppu)
         dma_step();
 
     ppu_step(ppu, cycles);
-    if (debug)
+    if (dbg.dbg_boot)
     {
         if (REG_PC >= 0x0090 && REG_PC <= 0x00A0) 
         {

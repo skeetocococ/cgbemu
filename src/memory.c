@@ -11,14 +11,14 @@ uint8_t* oam = &memory[OAM_START];
 size_t vram_size = VRAM_END - VRAM_START;
 size_t oam_size = OAM_END - OAM_START;
 
+uint8_t bootstrap_enabled = 0;
 static uint8_t boot_rom[256];
-static uint8_t bootstrap_enabled = 0;
 
 DMA dma = { 0, 0, 0 };
 
 void write_byte(uint16_t addr, uint8_t val)
 {
-    if (current_pc_debug >= 0x0090 && current_pc_debug <= 0x00B0) 
+    if (dbg.dbg_mem && current_pc_debug >= 0x0090 && current_pc_debug <= 0x00B0) 
     {
         DBG_PRINT("WRITE: PC=%04X writing 0x%02X to 0x%04X\n", current_pc_debug, val, addr);
     }
@@ -38,7 +38,8 @@ void write_byte(uint16_t addr, uint8_t val)
     }
     if (addr == 0xFF40) 
     {
-        DBG_PRINT("LCDC write: 0x%02X -> 0xFF40 (current LY=%02X)\n", val, memory[0xFF44]);
+        if (dbg.dbg_mem) 
+            DBG_PRINT("LCDC write: 0x%02X -> 0xFF40 (current LY=%02X)\n", val, memory[0xFF44]);
         memory[addr] = val;
         return;
     }
@@ -61,12 +62,12 @@ void write_byte(uint16_t addr, uint8_t val)
     }
     
     // Block writes to VRAM/OAM during DMA (optional - not critical)
-    if (dma.active && addr >= VRAM_START && addr < 0xA000) return;
-    if (dma.active && addr >= OAM_START && addr < 0xFEA0) return;
+    //if (dma.active && addr >= VRAM_START && addr < 0xA000) return;
+    //if (dma.active && addr >= OAM_START && addr < 0xFEA0) return;
     
     memory[addr] = val;
 
-    if (addr == 0xA000 || addr == 0xA001)
+    if (dbg.dbg_mem && (addr == 0xA000 || addr == 0xA001))
         DBG_PRINT("\n[Test wrote 0x%02X to 0x%04X]\n", val, addr);
 }
 

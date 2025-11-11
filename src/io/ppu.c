@@ -24,16 +24,8 @@ static uint8_t get_background_color_id(PPU *ppu, int x, int y)
 
     uint16_t tile_addr;
 
-    if (unsigned_mode) 
-    {
-        // 0x8000 mode, unsigned indexing
-        tile_addr = 0x8000 + tile_id * 16;
-    } else 
-    {
-        // 0x8800 mode, signed indexing
-        int8_t id_signed = (int8_t)tile_id;
-        tile_addr = 0x9000 + (id_signed * 16);
-    }
+    tile_addr = unsigned_mode ? 0x8000 + tile_id * 16
+                          : 0x8800 + ((int8_t)tile_id + 128) * 16;
 
     // Pixel row inside the tile
     int row = bg_y & 7;
@@ -57,7 +49,7 @@ static void render_scanline(PPU* ppu)
         return;
     }
 
-    if (debug && y == 0)
+    if (dbg.dbg_ppu && y == 0)
     {
         DBG_PRINT("=== Rendering scanline 0 ===\n");
         DBG_PRINT("LCDC=%02X BGP=%02X\n", ppu->LCDC, memory[0xFF47]);
@@ -76,7 +68,7 @@ static void render_scanline(PPU* ppu)
             tile_addr = 0x8000 + tile_id * 16;
         } else 
         {
-            tile_addr = 0x9000 + ((int8_t)tile_id * 16);
+            tile_addr = 0x8800 + ((int8_t)tile_id * 16);
         }
         DBG_PRINT("First tile address: 0x%04X\n", tile_addr);
         DBG_PRINT("First tile data: %02X %02X\n", memory[tile_addr], memory[tile_addr+1]);
@@ -132,8 +124,8 @@ static void render_scanline(PPU* ppu)
                     int win_x = x - wx;
                     int win_y = y - wy;
 
-                    uint8_t tile_x = win_x / 8;
-                    uint8_t tile_y = win_y / 8;
+                    uint8_t tile_x = (win_x >> 3) & 31;
+                    uint8_t tile_y = (win_y >> 3) & 31;
 
                     uint16_t tilemap_base = (ppu->LCDC & 0x40) ? 0x9C00 : 0x9800;
                     uint16_t tilemap_addr = tilemap_base + tile_y * 32 + tile_x;
@@ -146,10 +138,10 @@ static void render_scanline(PPU* ppu)
                     else 
                     {
                         int8_t signed_id = (int8_t)tile_id;
-                        tile_addr = 0x9000 + signed_id * 16;
+                        tile_addr = 0x8800 + signed_id * 16;
                     }
 
-                    int row = win_y & 7;
+                    int row = win_y % 8;
                     uint8_t low  = memory[tile_addr + row * 2];
                     uint8_t high = memory[tile_addr + row * 2 + 1];
 
@@ -197,7 +189,8 @@ static void render_scanline(PPU* ppu)
                 if (fb_x < 0 || fb_x >= 160) continue;
 
                 // Priority: OBJ-to-BG
-                if ((attr & 0x80) && bg_ids[fb_x] != 0) continue;
+                int opaque = (bg_ids[fb_x] != 0);
+                if ((attr & 0x80) && opaque) continue;
 
                 int palette_index = (attr & 0x10) ? 1 : 0;
                 uint8_t obp = memory[palette_index ? 0xFF49 : 0xFF48];
@@ -244,6 +237,7 @@ void ppu_step(PPU *ppu, int cycles)
     ppu->SCY = memory[0xFF42];
     ppu->WX = memory[0xFF4B];
     ppu->WY = memory[0xFF4A];
+    memory[0xFF41] = (memory[0xFF41] & 0xFC) | ppu->mode;
 
     ppu->mode_clock += cycles;
 

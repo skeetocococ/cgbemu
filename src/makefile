@@ -48,9 +48,6 @@ $(OBJ_DIR)/%.o: %.c
 
 -include $(OBJS:.o=.d)
 
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
-
 objects: $(OBJS)
 	@echo "Object files created in $(OBJ_DIR)/"
 

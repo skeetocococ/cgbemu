@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+extern uint8_t bootstrap_enabled;
 extern uint16_t current_pc_debug;
 #define MEM_SIZE 65536
 extern uint8_t memory[MEM_SIZE];
