@@ -11,6 +11,8 @@ extern uint8_t memory[MEM_SIZE];
 extern uint8_t* vram;
 extern uint8_t* oam;
 
+extern int vram_block;
+
 extern size_t vram_size;
 extern size_t oam_size;
 
