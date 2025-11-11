@@ -2,13 +2,13 @@
 #define DEBUG_H
 
 typedef struct {
-    int dbg_cpu;
-    int dbg_ppu;
-    int dbg_boot;
-    int dbg_mem;
+    uint8_t dbg_cpu;
+    uint8_t dbg_ppu;
+    uint8_t dbg_boot;
+    uint8_t dbg_mem;
 } Debug;
 
-extern int debug;
+extern uint8_t debug;
 extern Debug dbg;
 
 #define DBG_PRINT(...) do { \
