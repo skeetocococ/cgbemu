@@ -8,7 +8,7 @@ To compile, in /src, do
 mkdir build
 cd build
 cmake ..
-make --build .
+cmake --build .
 ```
 
 Can use the makefile if using gcc and SDL2 is installed in PATH.
