@@ -1,7 +1,7 @@
 #include "opcodes.h"
 #include "cpu.h"
 #include "instructions.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 
 // MISC
 static void nop(CPU* cpu) {} // Do nothing

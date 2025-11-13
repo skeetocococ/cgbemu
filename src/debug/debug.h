@@ -1,6 +1,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <stdint.h>
+
 typedef struct {
     uint8_t dbg_cpu;
     uint8_t dbg_ppu;

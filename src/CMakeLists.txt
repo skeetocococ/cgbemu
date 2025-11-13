@@ -30,9 +30,10 @@ endif()
 # Source files
 file(GLOB SRC
     main.c
-    memory.c
+    memory/*.c
     cpu/*.c
     io/*.c
+    core/*.c
     debug/*.c
 )
 
@@ -40,6 +41,8 @@ file(GLOB SRC
 include_directories(
     cpu
     io
+    core
+    memory
     debug
 )
 

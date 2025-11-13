@@ -2,7 +2,7 @@
 #include "../io/ppu.h"
 #include "instructions.h"
 #include "opcodes.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "../debug/debug.h"
 #include <stdint.h>
 #include <stdio.h>

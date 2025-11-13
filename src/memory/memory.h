@@ -4,17 +4,15 @@
 #include <stdint.h>
 #include <string.h>
 
-extern uint8_t bootstrap_enabled;
-extern uint16_t current_pc_debug;
 #define MEM_SIZE 65536
 extern uint8_t memory[MEM_SIZE];
+extern uint8_t boot_rom[256];
 extern uint8_t* vram;
 extern uint8_t* oam;
 
+extern uint8_t bootstrap_enabled;
 extern uint8_t vram_block;
-
-extern size_t vram_size;
-extern size_t oam_size;
+extern uint16_t current_pc_debug;
 
 // Timer / Divider registers
 #define ADDR_DIV   0xFF04  // Divider
@@ -61,7 +59,5 @@ extern DMA dma;
 void write_byte(uint16_t addr, uint8_t val);
 uint8_t read_byte(uint16_t addr);
 void dma_step();
-void bootstrap(char* rom);
-void init_hardware_reg();
 
 #endif // MEMORY_H

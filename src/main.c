@@ -1,237 +1,32 @@
-#include "memory.h"
 #include "cpu/cpu.h"
 #include "cpu/opcodes.h"
 #include "io/ppu.h"
-#include "io/joypad.h"
-#include "debug/debug.h"
+#include "core/gb.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_render.h>
-#include <string.h>
 
 int main(int argc, char** argv)
 { 
-    char* game_path = NULL;
-    char* boot_path = NULL;
-    
-    for (int i = 1; i < argc; i++) 
-    {
-        if (strcmp(argv[i], "--debug") == 0 
-            || strcmp(argv[i], "-d") == 0) 
-        {
-            debug = 1;
-            continue;
-        }
-        if (strcmp(argv[i], "-dCPU") == 0)
-            dbg.dbg_cpu = 1;
-        if (strcmp(argv[i], "-dPPU") == 0)
-            dbg.dbg_ppu = 1;
-        if (strcmp(argv[i], "-dBOOT") == 0)
-            dbg.dbg_boot = 1;
-        if (strcmp(argv[i], "-dMEM") == 0)
-            dbg.dbg_mem = 1;
-    
-        if (!game_path) 
-        {
-            game_path = argv[i];
-            continue;
-        }
-    
-        if (!boot_path) 
-        {
-            boot_path = argv[i];
-            continue;
-        }
-    }
-    
-    if (!game_path) 
-    {
-        printf("Usage: %s [--debug] <game.gb> [boot.gb]\n", argv[0]);
-        return 1;
-    }
-    
+    Options opts = parse_cli(argc, argv);
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER) != 0)
     {
         fprintf(stderr, "SDL_Init error: %s\n", SDL_GetError());
         return 1;
     }
     
-    SDL_Window* window = SDL_CreateWindow("Game Boy Emulator",
-                                          SDL_WINDOWPOS_CENTERED,
-                                          SDL_WINDOWPOS_CENTERED,
-                                          160 * 3,
-                                          144 * 3,
-                                          SDL_WINDOW_SHOWN);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* texture = SDL_CreateTexture(renderer,
-                                         SDL_PIXELFORMAT_RGBA8888,
-                                         SDL_TEXTUREACCESS_STREAMING,
-                                         160, 144);
-    
-    FILE* game_rom = fopen(game_path, "rb");
-    if (!game_rom)
-    {
-        fprintf(stderr, "Failed to open ROM file: %s\n", argv[1]);
-        return 1;
-    }
-    size_t game_size = fread(memory, 1, MEM_SIZE, game_rom);
-    fclose(game_rom);
-    printf("Game ROM loaded. (%zu bytes)\n", game_size);
+    SDL_Context context = init_sdl();
+    load_game(&opts, argv);
     
     CPU cpu;
     PPU ppu;
+
     init_opcodes();
     cpu_init(&cpu);
     ppu_init(&ppu);
-    
-    // Handle boot ROM or skip to 0x0100
-    if (boot_path != NULL)
-    {
-        bootstrap(boot_path);
-        printf("Boot ROM enabled. First 16 bytes:\n");
-        for (int i = 0; i < 16; i++) 
-        {
-            printf("%02X ", read_byte(i));
-            if (i == 7) printf("\n");
-        }
-        printf("\n");
-    }
-    else
-    {
-        // No boot ROM - initialize hardware registers and jump to 0x0100
-        init_hardware_reg();
-        cpu.PC = 0x0100;
-        printf("Skipping boot ROM, starting at 0x0100\n");
-        printf("First 16 ROM bytes at 0x0100:\n");
-        for (int i = 0; i < 16; i++) 
-        {
-            printf("%02X ", read_byte(0x0100 + i));
-            if (i == 7) printf("\n");
-        }
-        printf("\n");
-    }
-    
-    printf("Initial LCDC: 0x%02X\n", memory[0xFF40]);
-    printf("Initial SCX: %d, SCY: %d\n", memory[0xFF43], memory[0xFF42]);
-    printf("Initial BGP: 0x%02X\n", memory[0xFF47]);
-    printf("Starting PC: 0x%04X, SP: 0x%04X\n", cpu.PC, cpu.SP);
-    
-    int running = 1;
-    int frame_count = 0;
-    SDL_Event event;
-    uint16_t last_pc = cpu.PC;
-    int stuck_count = 0;
-    int instruction_count = 0;
-    int waiting_for_lcd = 0;
-    
-    while (running)
-    {
-        while (SDL_PollEvent(&event))
-        {
-            if (event.type == SDL_QUIT) 
-                running = 0;
-            else if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)
-                handle_input(&event);
-        }
-        
-        int cycles = 0;
-        while (cycles < 70224)
-        {
-            uint16_t pc_before = cpu.PC;
-            uint16_t sp_before = cpu.SP;
-            uint8_t opcode = read_byte(cpu.PC);
-            
-            if (dbg.dbg_cpu)
-            {
-                // Debug first 50 instructions
-                if (instruction_count < 50)
-                {
-                    DBG_PRINT("Inst %3d: PC=%04X SP=%04X opcode=%02X | AF=%04X BC=%04X DE=%04X HL=%04X\n",
-                           instruction_count, pc_before, sp_before, opcode, 
-                           cpu.af.AF, cpu.bc.BC, cpu.de.DE, cpu.hl.HL);
-                    instruction_count++;
-                }
-            }
-            
-            cycles += cpu_step(&cpu, &ppu);
-            
-            if (debug)
-            {
-                // Check whether stuck at 0x009F (boot ROM LCD wait)
-                if (dbg.dbg_ppu && pc_before == 0x009F && cpu.PC == 0x009F && !waiting_for_lcd) 
-                {
-                    DBG_PRINT("\n*** CPU stuck at 0x009F - this is the LCD wait loop in boot ROM ***\n");
-                    DBG_PRINT("Opcode: 0x%02X at 0x009F\n", opcode);
-                    DBG_PRINT("LCDC register (0xFF40): 0x%02X (bit 7 = LCD on/off)\n", memory[0xFF40]);
-                    DBG_PRINT("LY register (0xFF44): 0x%02X\n", memory[0xFF44]);
-                    DBG_PRINT("This loop waits for LY to reach 144, but LCDC bit 7 is 0 (LCD off)\n");
-                    DBG_PRINT("Boot ROM needs to turn on LCD first!\n");
-                    waiting_for_lcd = 1;
-                }
-                
-                // Detect if PC went in invalid memory
-                if (dbg.dbg_cpu && cpu.PC >= 0xFF00 && cpu.PC < 0xFF80)
-                {
-                    DBG_PRINT("\n!!! CPU crashed! PC is in hardware registers: 0x%04X !!!\n", cpu.PC);
-                    DBG_PRINT("PC before: 0x%04X, SP before: 0x%04X, opcode was: 0x%02X\n", 
-                           pc_before, sp_before, opcode);
-                    DBG_PRINT("Stack at SP:\n");
-                    for (int i = 0; i < 8; i++)
-                        DBG_PRINT("  [0x%04X] = 0x%02X\n", sp_before + i, read_byte(sp_before + i));
-                    print_cpu_state(&cpu);
-                    running = 0;
-                    break;
-                }
-            }
-        }
-        
-        if (ppu.frame_ready)
-        {
-            frame_count++;
-            
-            // Detect infinite loop
-            if (cpu.PC == last_pc)
-            {
-                stuck_count++;
-                if (stuck_count > 300)
-                {
-                    printf("\n!!! CPU appears stuck in infinite loop at PC=0x%04X !!!\n", cpu.PC);
-                    printf("Opcode at PC: 0x%02X\n", read_byte(cpu.PC));
-                    printf("Nearby code:\n");
-                    for (int i = -4; i <= 4; i++) 
-                    {
-                        printf("  [0x%04X] = 0x%02X%s\n", 
-                               cpu.PC + i, read_byte(cpu.PC + i),
-                               i == 0 ? " <-- PC" : "");
-                    }
-                    print_cpu_state(&cpu);
-                    running = 0;
-                    break;
-                }
-            }
-            else
-            {
-                stuck_count = 0;
-                last_pc = cpu.PC;
-            }
-            
-            if (dbg.dbg_ppu)
-            {
-                if (frame_count % 60 == 0)
-                {
-                    DBG_PRINT("Frame %d: PC=0x%04X SP=0x%04X LCDC=0x%02X BGP=0x%02X\n", 
-                           frame_count, cpu.PC, cpu.SP, memory[0xFF40], memory[0xFF47]);
-                }
-            }
-            
-            render_frame(renderer, texture, ppu.framebuffer);
-            ppu.frame_ready = 0;
-        }
-    }
-    
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    boot(&cpu, &opts);
+    emu_loop(&cpu, &ppu, &context);
+    sdl_cleanup(&context);
     
     return 0;
 }

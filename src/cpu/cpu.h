@@ -2,7 +2,7 @@
 #define CPU_H
 
 #include <stdint.h>
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "../io/ppu.h"
 
 // Flags

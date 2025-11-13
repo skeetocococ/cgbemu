@@ -11,18 +11,21 @@ LDFLAGS = $(SDL_LDFLAGS)
 
 # Directories
 CPU_DIR = cpu
+MEM_DIR = memory
 IO_DIR = io
+GB_DIR = core
 DEBUG_DIR = debug
 OBJ_DIR = obj
 
 # Source files
 SRCS = main.c \
-       memory.c \
+       $(MEM_DIR)/memory.c \
        $(CPU_DIR)/cpu.c \
        $(CPU_DIR)/instructions.c \
        $(CPU_DIR)/opcodes.c \
        $(IO_DIR)/ppu.c \
        $(IO_DIR)/joypad.c \
+	   $(GB_DIR)/gb.c \
        $(DEBUG_DIR)/debug.c
 
 # Object files (optional)

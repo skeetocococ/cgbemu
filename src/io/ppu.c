@@ -1,6 +1,6 @@
 #include "ppu.h"
 #include "../cpu/cpu.h"
-#include "../memory.h"
+#include "../memory/memory.h"
 #include "../debug/debug.h"
 #include <SDL2/SDL.h>
 
@@ -263,7 +263,7 @@ void ppu_step(PPU *ppu, int cycles)
                     ppu->mode = HBLANK;
                     memory[0xFF41] = (memory[0xFF41] & 0xFC) | 0x00;  // Mode 0
                     vram_block = 0;
-                    
+
                     // STAT interrupt for HBLANK
                     if (memory[0xFF41] & 0x08)
                         request_interrupt(STAT_INT);
