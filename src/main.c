@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     ppu_init(&ppu);
     boot(&cpu, &opts);
     emu_loop(&cpu, &ppu, &context);
-    sdl_cleanup(&context);
+    cleanup_sdl(&context);
     
     return 0;
 }
