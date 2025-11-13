@@ -66,7 +66,7 @@ SDL_Context init_sdl()
     return context;
 }
 
-void sdl_cleanup(SDL_Context* context)
+void cleanup_sdl(SDL_Context* context)
 {
     SDL_DestroyTexture(context->texture);
     SDL_DestroyRenderer(context->renderer);
