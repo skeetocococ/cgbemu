@@ -17,7 +17,7 @@ typedef struct {
 
 Options parse_cli(int count, char** args);
 SDL_Context init_sdl();
-void sdl_cleanup(SDL_Context* context);
+void cleanup_sdl(SDL_Context* context);
 void boot(CPU* cpu, Options* opts);
 void load_game(Options* opts, char** args);
 void emu_loop(CPU* cpu, PPU* ppu, SDL_Context* context);
