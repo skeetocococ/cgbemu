@@ -28,21 +28,21 @@ static void ld_bc_u16(CPU* cpu)
     uint8_t high = read_byte(REG_PC++);
     REG_BC = (high << 8) | low; // next two bytes into BC reg pair
 }
-void ld_de_u16(CPU* cpu) 
+static void ld_de_u16(CPU* cpu) 
 {
     uint8_t low = read_byte(REG_PC++);
     uint8_t high = read_byte(REG_PC++);
     REG_DE = (high << 8) | low;
 }
 
-void ld_hl_u16(CPU* cpu) 
+static void ld_hl_u16(CPU* cpu) 
 {
     uint8_t low = read_byte(REG_PC++);
     uint8_t high = read_byte(REG_PC++);
     REG_HL = (high << 8) | low;
 }
 
-void ld_sp_u16(CPU* cpu) 
+static void ld_sp_u16(CPU* cpu) 
 {
     uint8_t low = read_byte(REG_PC++);
     uint8_t high = read_byte(REG_PC++);
